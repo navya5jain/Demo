@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Triad Shift - a security triage game with Deaf, Blind and Mute modes that each play the full shift solo. Built by Team Infinity Loop.">
+<meta name="color-scheme" content="dark">
+<title>Triad Shift</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#060a0c; --surface:#0c1417; --surface-2:#111c20; --surface-3:#16242a;
+    --ink:#e8f2f0; --ink-soft:#7d9998; --border:#1d2f33;
+    --safe:#33e29b; --safe-ink:#04241a; --safe-soft:#0e2f22;
+    --danger:#ff5266; --danger-soft:#331119;
+    --caution:#ffb531;
+    --accent:#3fc9e8; --accent-ink:#03272f; --accent-soft:#0c2c33;
+    --violet:#b18cff; --violet-ink:#1c1330; --violet-soft:#1e1736;
+    --gold:#e8c468; --gold-ink:#2a1f04; --gold-soft:#2c2308;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+    --radius:12px;
+    --font-display:'IBM Plex Mono',ui-monospace,monospace;
+    --font-body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; color:var(--ink); font-family:var(--font-body);
+    background:
+      radial-gradient(1000px 460px at 50% -140px, #0e2024 0%, transparent 60%),
+      repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px),
+      var(--bg);
+    min-height:100%; overflow-x:hidden;
+  }
+  h1,h2,h3,.mono{font-family:var(--font-display);}
+  button{font-family:inherit; cursor:pointer;}
+  [hidden]{display:none !important;}
+  button:focus-visible, [tabindex]:focus-visible{outline:3px solid var(--accent); outline-offset:3px;}
+
+  .wrap{max-width:900px; margin:0 auto; padding:20px 16px calc(120px + env(safe-area-inset-bottom,0px)); position:relative;}
+
+  .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px; flex-wrap:wrap;}
+  .top h1{font-size:clamp(20px,4.2vw,26px); margin:0; letter-spacing:.01em; color:var(--safe); text-shadow:0 0 18px rgba(51,226,155,.25);}
+  .top .tag{font-size:11px; color:var(--ink-soft); letter-spacing:.08em; text-transform:uppercase;}
+  .teamline{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:16px;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px;}
+  .card.dim{opacity:.4; filter:grayscale(.4); pointer-events:none; transition:opacity .25s ease, filter .25s ease;}
+  .section{margin-bottom:16px;}
+
+  /* ---------- mode select ---------- */
+  .lead{color:var(--ink-soft); font-size:13.5px; line-height:1.55; margin:0 0 4px; max-width:66ch;}
+  .modes{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:18px 0 6px;}
+  @media (max-width:640px){ .modes{grid-template-columns:1fr;} }
+  .mode{
+    text-align:left; background:var(--surface-2); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; color:var(--ink); display:flex; gap:14px; align-items:flex-start; width:100%;
+  }
+  .mode:hover{border-color:var(--safe);}
+  .mode .badge{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:16px;font-weight:700;flex-shrink:0;}
+  .mode.deaf .badge{background:var(--accent-soft); color:var(--accent);}
+  .mode.blind .badge{background:var(--violet-soft); color:var(--violet);}
+  .mode.mute .badge{background:var(--gold-soft); color:var(--gold);}
+  .mode.team .badge{background:var(--safe-soft); color:var(--safe);}
+  .mode b{display:block; font-size:14px; margin-bottom:3px;}
+  .mode span{font-size:12.5px; color:var(--ink-soft); line-height:1.45;}
+  .mode .solo{display:inline-block; margin-top:8px; font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; border:1px solid var(--border); border-radius:999px; padding:3px 9px; color:var(--ink-soft);}
+
+  .fairness{margin-top:18px; border:1px dashed var(--border); border-radius:12px; padding:14px 16px; font-size:12.5px; color:var(--ink-soft); line-height:1.55;}
+  .fairness b{color:var(--safe);}
+
+  /* ---------- briefing ---------- */
+  .flow{display:flex; align-items:stretch; gap:8px; margin:16px 0; flex-wrap:wrap;}
+  .flow .fstep{flex:1; min-width:150px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .flow .fstep b{display:block; font-size:12.5px; margin-bottom:4px;}
+  .flow .fstep span{font-size:12px; color:var(--ink-soft); line-height:1.4;}
+  .flow .arrow{display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--ink-soft);}
+  @media (max-width:640px){ .flow{flex-direction:column;} .flow .arrow{transform:rotate(90deg); height:14px;} }
+
+  .rule-list{margin:0 0 20px; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px;}
+  .rule-list li{font-size:13px; line-height:1.5; padding:11px 13px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2);}
+  .rule-list b{color:var(--accent);}
+
+  .btn-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .start-btn{
+    display:inline-flex; align-items:center; gap:8px; background:linear-gradient(120deg,var(--safe),var(--accent));
+    color:#03181a; border:none; border-radius:10px; padding:14px 22px; font-size:15px; font-weight:700;
+    box-shadow:0 8px 24px rgba(51,226,155,.25);
+  }
+  .start-btn:hover{filter:brightness(1.06);}
+  .ghost-btn{background:transparent; color:var(--ink-soft); border:1px solid var(--border); border-radius:10px; padding:13px 18px; font-size:13px;}
+  .ghost-btn:hover{border-color:var(--accent); color:var(--accent);}
+
+  /* ---------- progress / HUD ---------- */
+  .shift-bar{display:flex; gap:6px; margin-bottom:16px;}
+  .shift-bar i{flex:1; height:7px; border-radius:4px; background:var(--surface-2); border:1px solid var(--border);}
+  .shift-bar i.done{background:var(--safe); border-color:var(--safe); box-shadow:0 0 10px rgba(51,226,155,.5);}
+  .shift-bar i.now{border-color:var(--accent); box-shadow:0 0 8px rgba(63,201,232,.35);}
+
+  .hud{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .hud .stats{display:flex; gap:20px; flex-wrap:wrap;}
+  .hud .stat{display:flex; flex-direction:column; gap:2px;}
+  .hud .stat .n{font-size:18px; font-variant-numeric:tabular-nums;}
+  .hud .stat .l{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-soft);}
+  .timerwrap{display:flex; align-items:center; gap:8px;}
+  .timernum{font-family:var(--font-display); font-size:16px; font-variant-numeric:tabular-nums; color:var(--ink-soft);}
+  .timerbar{height:6px; border-radius:4px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden; width:120px;}
+  .timerbar > i{display:block; height:100%; background:var(--accent); transition:width 1s linear, background .3s ease;}
+  .timerbar.low > i{background:var(--danger);}
+
+  .step-banner{display:flex; align-items:center; gap:12px; padding:13px 16px; margin-bottom:16px; border-radius:10px; background:var(--gold-soft); border:1px solid var(--gold);}
+  .step-banner .num{width:26px;height:26px;border-radius:50%; background:var(--gold); color:var(--gold-ink); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-family:var(--font-display);}
+  .step-banner .txt{font-size:13.5px; font-weight:600; color:var(--ink); line-height:1.35;}
+
+  .panel-title{display:flex; align-items:center; gap:9px; margin-bottom:12px; flex-wrap:wrap;}
+  .panel-title .dot{width:9px;height:9px;border-radius:50%;}
+  .panel-title h3{font-size:12.5px; letter-spacing:.04em; text-transform:uppercase; margin:0;}
+  .panel-title span.who{font-size:11px; color:var(--ink-soft); margin-left:auto;}
+  .cat-badge{display:inline-block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); background:var(--accent-soft); border:1px solid var(--accent); padding:3px 9px; border-radius:999px; margin-bottom:12px;}
+
+  /* evidence tiles */
+  .ev-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media (max-width:720px){ .ev-grid{grid-template-columns:1fr;} }
+  .ev-tile{
+    border-radius:10px; border:1px solid var(--border); background:var(--surface-2);
+    padding:14px 16px; text-align:left; color:var(--ink); min-height:92px; width:100%;
+    display:flex; flex-direction:column; gap:6px; justify-content:center;
+  }
+  .ev-tile:hover{border-color:var(--accent);}
+  .ev-tile.revealed{cursor:default; background:var(--accent-soft); border-color:var(--accent);}
+  .ev-tile .lbl{font-family:var(--font-display); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft);}
+  .ev-tile .val{font-size:13.5px; line-height:1.45;}
+  .ev-tile .cue{font-size:12.5px; color:var(--ink-soft); text-align:center;}
+  .ev-tile .chan{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
+  .ev-tile.audio.revealed{background:var(--violet-soft); border-color:var(--violet);}
+  .ev-tile.audio.revealed .lbl{color:var(--violet);}
+  .waves{display:flex; align-items:flex-end; gap:3px; height:16px;}
+  .waves i{display:block; width:3px; background:var(--violet); border-radius:2px; height:5px; opacity:.55;}
+  .waves.speaking i{animation:wv 1s ease-in-out infinite;}
+  .waves i:nth-child(2){animation-delay:.1s;} .waves i:nth-child(3){animation-delay:.2s;}
+  .waves i:nth-child(4){animation-delay:.3s;} .waves i:nth-child(5){animation-delay:.15s;}
+  @media (prefers-reduced-motion: no-preference){ @keyframes wv{0%,100%{height:5px;}50%{height:16px;}} }
+
+  .replay-row{margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .play-btn{background:var(--violet); color:var(--violet-ink); border:none; border-radius:10px; padding:12px 18px; font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:10px;}
+  .play-btn:hover{filter:brightness(1.08);}
+  .play-btn:disabled{opacity:.4; cursor:not-allowed; filter:none;}
+  .hint{font-size:12px; color:var(--ink-soft);}
+
+  /* answer console */
+  .choices{display:grid; gap:10px; margin-bottom:14px;}
+  .choice-btn{text-align:left; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:13px 15px; font-size:13px; color:var(--ink); display:flex; gap:10px; align-items:flex-start;}
+  .choice-btn:hover{border-color:var(--gold);}
+  .choice-btn.sel{border-color:var(--gold); background:var(--gold-soft);}
+  .choice-btn .key{font-family:var(--font-display); font-size:11px; color:var(--ink-soft); border:1px solid var(--border); border-radius:5px; padding:2px 7px; flex-shrink:0;}
+  .choice-btn.sel .key{color:var(--gold); border-color:var(--gold);}
+  .submit-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .submit-btn{background:var(--gold); color:var(--gold-ink); border:none; border-radius:10px; padding:13px 20px; font-size:14.5px; font-weight:700;}
+  .submit-btn:disabled{opacity:.35; cursor:not-allowed;}
+
+  /* feedback */
+  .feedback{margin-top:6px; border-radius:10px; padding:16px; border:1px solid; display:flex; flex-direction:column; gap:10px;}
+  .feedback.good{border-color:var(--safe); background:var(--safe-soft);}
+  .feedback.bad{border-color:var(--danger); background:var(--danger-soft);}
+  .feedback .verdict{font-size:13.5px; font-family:var(--font-display);}
+  .feedback.good .verdict{color:var(--safe);}
+  .feedback.bad .verdict{color:var(--danger);}
+  .feedback p{margin:0; font-size:12.5px; line-height:1.55;}
+  .flags{display:flex; flex-wrap:wrap; gap:6px;}
+  .flags span{font-size:10.5px; background:var(--surface-3); border:1px solid var(--border); border-radius:999px; padding:4px 9px; color:var(--ink-soft);}
+  .next-btn{align-self:flex-start; background:var(--accent); color:var(--accent-ink); border:none; border-radius:8px; padding:10px 18px; font-size:12.5px; font-weight:700;}
+
+  /* alarm flash — visual channel for players who can't hear */
+  .wrap.alarm::after{ content:''; position:fixed; inset:0; pointer-events:none; z-index:50; background:radial-gradient(circle at 50% 0%, rgba(255,82,102,.30), transparent 65%); animation:alarmfade .55s ease forwards; }
+  .wrap.alarm-ok::after{ content:''; position:fixed; inset:0; pointer-events:none; z-index:50; background:radial-gradient(circle at 50% 0%, rgba(51,226,155,.26), transparent 65%); animation:alarmfade .55s ease forwards; }
+  @keyframes alarmfade{0%{opacity:1;}100%{opacity:0;}}
+  @media (prefers-reduced-motion: no-preference){ .wrap.shake{animation:shakewrap .4s ease;} }
+  @keyframes shakewrap{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* caption bar — the always-on text channel */
+  .captions{
+    position:fixed; left:0; right:0; bottom:0; z-index:40;
+    background:rgba(6,10,12,.94); border-top:1px solid var(--border);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    display:flex; align-items:center; gap:10px;
+  }
+  .captions .cap-label{font-family:var(--font-display); font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--safe); flex-shrink:0;}
+  .captions .cap-text{font-size:12.5px; color:var(--ink); line-height:1.4; flex:1; min-width:0;}
+  .captions .cap-keys{font-size:10.5px; color:var(--ink-soft); flex-shrink:0; display:none;}
+  @media (min-width:760px){ .captions .cap-keys{display:block;} }
+
+  /* report */
+  .report-hero{text-align:center; padding:6px 0;}
+  .rank{font-size:clamp(22px,5vw,30px); margin:8px 0 2px;}
+  .rank.elite{color:var(--safe);} .rank.senior{color:var(--accent);} .rank.analyst{color:var(--caution);} .rank.rookie{color:var(--danger);}
+  .report-stats{display:flex; justify-content:center; gap:28px; margin:18px 0; flex-wrap:wrap;}
+  .report-stats .n{font-size:22px; font-variant-numeric:tabular-nums; font-family:var(--font-display);}
+  .report-stats .l{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-soft);}
+  .board{margin-top:18px; border-top:1px solid var(--border); padding-top:14px;}
+  .board h3{font-size:12px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 10px;}
+  .board table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .board th, .board td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--border);}
+  .board th{font-family:var(--font-display); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); font-weight:500;}
+  .board td.num{font-variant-numeric:tabular-nums; font-family:var(--font-display);}
+  .board .empty{font-size:12px; color:var(--ink-soft);}
+  footer.foot{margin-top:22px; text-align:center; font-size:11px; color:var(--ink-soft); line-height:1.6;}
+  .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="top">
+    <h1>&gt; TRIAD_SHIFT</h1>
+    <div class="tag" id="modeTag">a security triage drill — one game, three ways in</div>
+  </div>
+  <div class="teamline">Team Infinity Loop</div>
+
+  <!-- MODE SELECT -->
+  <section id="modeSelect" class="card">
+    <h2 style="font-size:18px; margin:0 0 8px;">Same shift. Same six tickets. Same score. Pick your way in.</h2>
+    <p class="lead">
+      Six real attack tickets land on a clock. You read the evidence, you make the triage call.
+      Nothing in this game is locked behind a sense you don't have — every clue ships as text,
+      as speech and as a visible alert at the same time, so whichever mode you choose, you finish
+      the whole shift on your own.
+    </p>
+
+    <div class="modes" id="modeGrid"></div>
+
+    <div class="fairness">
+      <b>Why it's still one game:</b> the six tickets, the 4 options, the scoring and the leaderboard
+      are identical in every mode. A mode only changes <i>which channel the clue arrives on</i> and
+      <i>how you answer</i> — never how hard the ticket is. That's what keeps one scoreboard honest.
+    </div>
+  </section>
+
+  <!-- BRIEFING -->
+  <section id="briefing" class="card" hidden>
+    <div class="panel-title"><span class="dot" id="briefDot"></span><h3 id="briefMode">Mode</h3><span class="who" id="briefSolo"></span></div>
+    <h2 style="font-size:18px; margin:0 0 6px;" id="briefTitle"></h2>
+    <p class="lead" id="briefLead"></p>
+    <ul class="rule-list" id="briefRules"></ul>
+    <div class="flow" id="briefFlow"></div>
+    <div class="btn-row">
+      <button class="start-btn" id="startBtn">Start the shift &rarr;</button>
+      <button class="ghost-btn" id="backBtn">Change mode</button>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" hidden>
+    <div class="shift-bar" id="shiftBar"></div>
+    <div class="hud">
+      <div class="stats">
+        <div class="stat"><span class="n mono" id="roundNo">1 / 6</span><span class="l">Ticket</span></div>
+        <div class="stat"><span class="n mono" id="scoreNo">0</span><span class="l">Score</span></div>
+        <div class="stat"><span class="n mono" id="livesNo">&#9679;&#9679;&#9679;</span><span class="l">Lives</span></div>
+        <div class="stat"><span class="n mono" id="modeNo">&mdash;</span><span class="l">Mode</span></div>
+      </div>
+      <div class="timerwrap">
+        <span class="timernum" id="timerNum">45s</span>
+        <div class="timerbar" id="timerBar"><i id="timerFill" style="width:100%"></i></div>
+      </div>
+    </div>
+
+    <div class="cat-badge" id="catBadge">Category</div>
+    <div class="step-banner" id="stepBanner"></div>
+
+    <div class="card section" id="evCard">
+      <div class="panel-title"><span class="dot" style="background:var(--accent)"></span><h3>Step 1 &middot; Evidence</h3><span class="who" id="evWho"></span></div>
+      <div class="ev-grid" id="evGrid"></div>
+      <div class="replay-row" id="replayRow">
+        <button class="play-btn" id="playAllBtn"><span class="waves" id="waves"><i></i><i></i><i></i><i></i><i></i></span><span id="playAllLabel">Read all evidence aloud</span></button>
+        <span class="hint" id="evHint"></span>
+      </div>
+    </div>
+
+    <div class="card section" id="decideCard">
+      <div class="panel-title"><span class="dot" style="background:var(--gold)"></span><h3>Step 2 &middot; Triage decision</h3><span class="who" id="decWho"></span></div>
+      <div class="choices" id="choices"></div>
+      <div class="submit-row">
+        <button class="submit-btn" id="submitBtn" disabled>Lock in decision</button>
+        <span class="hint" id="decHint"></span>
+      </div>
+    </div>
+
+    <div id="feedbackWrap"></div>
+  </section>
+
+  <!-- REPORT -->
+  <section id="report" class="card" hidden>
+    <div class="report-hero">
+      <div class="tag" style="font-size:11px;">Shift complete</div>
+      <h2 class="rank" id="rankTitle">Analyst</h2>
+      <p style="color:var(--ink-soft); font-size:13px; margin:0;" id="rankLine"></p>
+    </div>
+    <div class="report-stats">
+      <div><div class="n" id="repScore">0</div><div class="l">Score</div></div>
+      <div><div class="n" id="repAcc">0%</div><div class="l">Accuracy</div></div>
+      <div><div class="n" id="repLives">3</div><div class="l">Lives left</div></div>
+    </div>
+    <div class="board">
+      <h3>Shift log &mdash; one board, every mode</h3>
+      <div id="boardBody"></div>
+      <p class="hint" style="margin-top:10px;">The board ranks on score alone. Mode is shown for interest, never for ranking.</p>
+    </div>
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="start-btn" id="againBtn">Run another shift &rarr;</button>
+      <button class="ghost-btn" id="switchBtn">Try another mode</button>
+    </div>
+  </section>
+
+  <footer class="foot">
+    Every ticket is a real attack pattern. One game, four ways to play it &mdash; and the scoreboard
+    can't tell which one you used.
+  </footer>
+</div>
+
+<div class="captions" id="captions">
+  <span class="cap-label">Live</span>
+  <span class="cap-text" id="capText" role="status" aria-live="polite">Choose a mode to begin.</span>
+  <span class="cap-keys" id="capKeys"></span>
+</div>
+
+<script>
+(function(){
+  /* ---------------------------------------------------------------
+     TICKETS — identical in every mode. Three clues each: two that are
+     normally "visible" and one that is normally "audio only". No mode
+     ever gets fewer clues or easier options; only the channel changes.
+  --------------------------------------------------------------- */
+  const TICKETS = [
+    { id:'phish', category:'Email Phishing',
+      ev:[ {label:'FROM', val:'IT-Support@rnicrosoft-support.com'}, {label:'MESSAGE', val:'"Dear User — your password expires in 2 hours!"'} ],
+      clueLabel:'LINK CHECK',
+      clue:'The reset link in that email points to verify-account-now dot net — a domain with no connection to any real company.',
+      choices:[ 'Click the link and reset the password', 'Report it as phishing, don’t click anything', 'Reply asking IT to confirm this is real', 'Forward it to a coworker first' ],
+      correct:1,
+      why:'This is a textbook phishing email.',
+      flags:['Lookalike domain: "rnicrosoft" fakes "microsoft" with r+n','Generic greeting: "Dear User"','Artificial urgency: a 2-hour deadline','Link domain matches no real company']
+    },
+    { id:'login', category:'Account Takeover',
+      ev:[ {label:'LOGIN #1', val:'Mumbai, India — 11:52 PM'}, {label:'LOGIN #2', val:'Lagos, Nigeria — 3:14 AM (same night)'} ],
+      clueLabel:'DEVICE LOG',
+      clue:'The second login was from a device never seen on this account before — an unrecognized Windows PC.',
+      choices:[ 'Ignore it, probably a VPN', 'Change the password immediately and turn on MFA', 'Reply to the alert confirming it was you', 'Wait and see if it happens again' ],
+      correct:1,
+      why:'Two logins from opposite sides of the world in under 4 hours is physically impossible — "impossible travel" is a classic sign of a stolen password.',
+      flags:['Impossible travel between two logins','Unrecognized device','No time to have actually travelled that distance']
+    },
+    { id:'vish', category:'Voice Phishing (Vishing)',
+      ev:[ {label:'CALLER ID', val:'Unknown Number'}, {label:'CLAIM', val:'"IT Helpdesk — critical server issue"'} ],
+      clueLabel:'CALL TRANSCRIPT',
+      clue:'The caller says: "I just need you to confirm your password so I can verify your identity and push the fix."',
+      choices:[ 'Give the password, they sound official', 'Hang up and call IT back on the official helpdesk number', 'Give a fake password to see what they do', 'Ask them to email the request instead' ],
+      correct:1,
+      why:'Real IT staff never need your actual password — they already have their own admin access.',
+      flags:['Unsolicited call demanding a password','Manufactured urgency','No way to verify the caller’s identity independently']
+    },
+    { id:'usb', category:'Physical / USB Baiting',
+      ev:[ {label:'FOUND', val:'USB drive on the parking lot floor'}, {label:'LABEL', val:'"Q4 Salaries — CONFIDENTIAL"'} ],
+      clueLabel:'FRONT DESK LOG',
+      clue:'No employee has reported losing a USB drive this week.',
+      choices:[ 'Plug it into a work computer to find the owner', 'Hand it to IT/Security — don’t plug it in anywhere', 'Plug it into a personal laptop instead', 'Just throw it away' ],
+      correct:1,
+      why:'This is a classic "USB drop" attack — the tempting label is bait for exactly this kind of curiosity.',
+      flags:['Provocative label designed to trigger curiosity','No known owner','Any USB port is a potential malware entry point']
+    },
+    { id:'popup', category:'Fake Software Update',
+      ev:[ {label:'POPUP', val:'"Your Flash Player is out of date!"'}, {label:'BUTTON', val:'[ Update Now ]'} ],
+      clueLabel:'VENDOR NOTE',
+      clue:'Adobe discontinued Flash Player company-wide years ago — no legitimate site still runs on it.',
+      choices:[ 'Click "Update Now"', 'Close the popup, update only from official app/OS settings', 'Ignore it and keep browsing', 'Screenshot it and share online' ],
+      correct:1,
+      why:'Any popup still referencing Flash Player is automatically fake — real updates never come from a browser popup.',
+      flags:['References long-discontinued software','Update prompt comes from a webpage, not the OS','Designed to rush you past a moment of doubt']
+    },
+    { id:'bec', category:'Business Email Compromise',
+      ev:[ {label:'FROM', val:'"CEO Alex Reyes" <a.reyes@yourcompany-inc.com>'}, {label:'REQUEST', val:'"Wire $15,000 to a new vendor account today"'} ],
+      clueLabel:'THREAD TAIL',
+      clue:'The email also says: "Don’t mention this to finance yet — I’m in back-to-back meetings."',
+      choices:[ 'Process the wire right away, it’s the CEO', 'Verify with Alex directly by phone before doing anything', 'Reply to the email asking for confirmation', 'Forward it to a coworker to decide' ],
+      correct:1,
+      why:'Urgency plus secrecy plus a request to bypass normal process is the signature of CEO fraud (Business Email Compromise).',
+      flags:['Asks to bypass the normal finance process','"Don’t tell finance yet" — manufactured secrecy','Replying to the same email only reaches the attacker']
+    }
+  ];
+
+  /* ---------------------------------------------------------------
+     MODES — one engine, four wirings. `solo:true` means one player
+     finishes the entire shift with no help from anybody.
+  --------------------------------------------------------------- */
+  const MODES = {
+    deaf: {
+      key:'deaf', letter:'D', label:'Deaf mode', short:'DEAF',
+      tag:'Deaf / hard of hearing — play the whole shift solo',
+      blurb:'Every clue is on screen as text, including the one that is normally spoken. Alerts flash and print.',
+      color:'var(--accent)', solo:true, timer:45,
+      speakClues:false, speakEvents:false, tones:false, flash:true, haptics:false,
+      hideClueText:false, autoOpenClue:false, showPlayAll:false,
+      title:'Nothing you need is a sound.',
+      lead:'The third clue — the one other modes hear on headphones — arrives here as a transcript card. Every event that other modes hear as a beep is a screen flash plus a line in the caption bar at the bottom. You can finish the shift with the volume at zero.',
+      rules:[
+        '<b>Three text tiles.</b> Tap each one to open it. The third is the transcript of the audio clue — word for word, nothing summarised.',
+        '<b>Alerts you can see.</b> Time running low, right call, wrong call: the screen pulses and the caption bar prints it.',
+        '<b>No audio anywhere.</b> Speech and tones are switched off in this mode, not just muted.'
+      ],
+      flow:[ ['Open 3 tiles','All evidence as text, transcript included'], ['Read the caption bar','Every event prints there'], ['Lock the call in','Tap an option, then Lock in'] ]
+    },
+    blind: {
+      key:'blind', letter:'B', label:'Blind mode', short:'BLIND',
+      tag:'Blind / low vision — play the whole shift solo',
+      blurb:'Everything is spoken and keyboard-driven. Nothing is colour-only or screen-only.',
+      color:'var(--violet)', solo:true, timer:60,
+      speakClues:true, speakEvents:true, tones:true, flash:false, haptics:true,
+      hideClueText:false, autoOpenClue:true, showPlayAll:true,
+      title:'You can play with the screen off.',
+      lead:'All three clues, all four options, the clock and every result are spoken aloud. The whole game runs from the keyboard, and the text stays on screen too so a screen reader or a sighted friend can follow along — nothing is withheld from anyone.',
+      rules:[
+        '<b>Keys 1, 2, 3</b> read the three clues. <b>4 to 7</b> pick an option. <b>Enter</b> locks it in.',
+        '<b>R</b> repeats the last thing said. <b>T</b> reads the clock. <b>N</b> moves to the next ticket.',
+        '<b>A longer clock</b> — 60 seconds, because listening takes longer than glancing. Scoring is unchanged.'
+      ],
+      flow:[ ['Hear the evidence','Press 1, 2, 3 or the read-all button'], ['Hear the options','They are read out in order'], ['Enter to lock in','Result is spoken with the red flags'] ]
+    },
+    mute: {
+      key:'mute', letter:'M', label:'Mute mode', short:'MUTE',
+      tag:'Non-speaking — play the whole shift solo',
+      blurb:'Nothing ever asks you to speak. Sight and sound both on, every input a tap or a key.',
+      color:'var(--gold)', solo:true, timer:45,
+      speakClues:true, speakEvents:true, tones:true, flash:true, haptics:true,
+      hideClueText:false, autoOpenClue:false, showPlayAll:true,
+      title:'No mic. No voice chat. Not once.',
+      lead:'You get the full picture — text, speech and alerts — and every single control is a button or a key. There is no voice command, no "say it out loud", no timed speaking round anywhere in the game, so nothing about this mode is a workaround.',
+      rules:[
+        '<b>Every control is a button.</b> Tap or use the keyboard; the game never listens for a voice.',
+        '<b>Both channels on.</b> Clues are readable and can be read aloud — your choice, not a requirement.',
+        '<b>Silent submit.</b> You lock the call in with one tap, and the result is shown and spoken.'
+      ],
+      flow:[ ['Open 3 tiles','Read them, or have them read to you'], ['Pick an option','Tap it, or press 4 to 7'], ['Lock in silently','One tap ends the ticket'] ]
+    },
+    team: {
+      key:'team', letter:'T', label:'Team relay', short:'TEAM',
+      tag:'Bonus — three players, one queue',
+      blurb:'The co-op version: the clues are split so a deaf, a blind and a non-speaking player must pool them.',
+      color:'var(--safe)', solo:false, timer:45,
+      speakClues:true, speakEvents:true, tones:true, flash:true, haptics:true,
+      hideClueText:true, autoOpenClue:false, showPlayAll:false,
+      title:'Optional: play it as a three-seat relay.',
+      lead:'Same tickets, same score, but the three clues are handed to three different people. Deaf opens the two visible tiles, Blind hears the third on headphones and says it out loud, and the non-speaking player combines everything and locks the call in.',
+      rules:[
+        '<b>Headphones for the third tile.</b> Its text stays hidden so only the listener has it.',
+        '<b>Nobody is a spectator.</b> No single seat holds enough clues to answer alone.',
+        '<b>Solo modes are the main game.</b> This one is here for the moments when three people are in the room.'
+      ],
+      flow:[ ['Deaf reveals','Taps the two visible tiles'], ['Blind confirms','Hears tile 3, says it aloud'], ['Mute decides','Combines and locks in'] ]
+    }
+  };
+  const MODE_ORDER = ['deaf','blind','mute','team'];
+
+  const els={}; ['modeSelect','modeGrid','briefing','briefMode','briefDot','briefSolo','briefTitle','briefLead','briefRules','briefFlow',
+    'startBtn','backBtn','game','report','shiftBar','roundNo','scoreNo','livesNo','modeNo','timerNum','timerBar','timerFill',
+    'catBadge','stepBanner','evCard','evGrid','evWho','replayRow','playAllBtn','playAllLabel','waves','evHint','decideCard','decWho',
+    'choices','submitBtn','decHint','feedbackWrap','rankTitle','rankLine','repScore','repAcc','repLives','boardBody',
+    'againBtn','switchBtn','wrap','capText','capKeys','modeTag'
+  ].forEach(id=> els[id]=document.getElementById(id));
+
+  let state=null, mode=null, audioCtx=null, lastSpoken='', speechNudge=null;
+  const SPEECH_OK = 'speechSynthesis' in window;
+  const board = [];
+
+  if(SPEECH_OK){
+    try{
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.addEventListener('voiceschanged', ()=>window.speechSynthesis.getVoices());
+    }catch(e){}
+  }
+
+  function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':s; return d.innerHTML; }
+
+  /* ---------- the fairness layer: one event, every channel ---------- */
+  function beep(freq,dur,type){
+    if(!mode || !mode.tones) return;
+    try{
+      audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type=type||'sine'; o.frequency.value=freq; g.gain.value=.05;
+      o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+(dur||.12));
+    }catch(e){}
+  }
+  function speak(text, force){
+    if(!SPEECH_OK) return false;
+    if(!force && (!mode || !mode.speakEvents)) return false;
+    lastSpoken = text;
+    try{
+      const synth=window.speechSynthesis;
+      synth.cancel(); clearInterval(speechNudge);
+      setTimeout(()=>{
+        const u=new SpeechSynthesisUtterance(text);
+        u.rate=.98;
+        u.onstart=()=> els.waves.classList.add('speaking');
+        u.onend=()=>{ els.waves.classList.remove('speaking'); clearInterval(speechNudge); };
+        u.onerror=()=>{ els.waves.classList.remove('speaking'); clearInterval(speechNudge); };
+        synth.speak(u);
+        speechNudge=setInterval(()=>{ if(synth.speaking){ synth.pause(); synth.resume(); } else clearInterval(speechNudge); },4000);
+      },50);
+      return true;
+    }catch(e){ return false; }
+  }
+  function flash(ok){
+    if(!mode || !mode.flash) return;
+    els.wrap.classList.remove('alarm','alarm-ok'); void els.wrap.offsetWidth;
+    els.wrap.classList.add(ok?'alarm-ok':'alarm');
+    if(!ok){ els.wrap.classList.add('shake'); setTimeout(()=>els.wrap.classList.remove('shake'),400); }
+  }
+  function buzz(pattern){
+    if(!mode || !mode.haptics) return;
+    try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  }
+  // announce() is the ONLY way the game talks to a player. It writes to the
+  // caption bar always, and adds speech / flash / haptics per mode. Nothing in
+  // the game calls speechSynthesis or a beep on its own.
+  function announce(text, opts){
+    opts = opts || {};
+    els.capText.textContent = text;
+    lastSpoken = text;
+    if(mode && mode.speakEvents) speak(text, true);
+    if(opts.alert) flash(opts.alert === 'good');
+    if(opts.tone) beep(opts.tone[0], opts.tone[1], opts.tone[2]);
+    if(opts.buzz) buzz(opts.buzz);
+  }
+
+  /* ---------- mode select ---------- */
+  function renderModes(){
+    els.modeGrid.innerHTML='';
+    MODE_ORDER.forEach(k=>{
+      const m=MODES[k];
+      const b=document.createElement('button');
+      b.className='mode '+k;
+      b.setAttribute('aria-label', m.label+'. '+m.tag+'. '+m.blurb);
+      b.innerHTML='<span class="badge">'+m.letter+'</span><span><b>'+esc(m.label)+'</b><span>'+esc(m.blurb)+'</span>'+
+        '<span class="solo">'+(m.solo?'Solo &middot; no help needed':'3 players')+'</span></span>';
+      b.addEventListener('click', ()=> chooseMode(k));
+      els.modeGrid.appendChild(b);
+    });
+  }
+  function chooseMode(k){
+    mode = MODES[k];
+    els.modeTag.textContent = mode.tag;
+    els.briefMode.textContent = mode.label;
+    els.briefDot.style.background = mode.color;
+    els.briefSolo.textContent = mode.solo ? 'One player, start to finish' : 'Three players';
+    els.briefTitle.textContent = mode.title;
+    els.briefLead.textContent = mode.lead;
+    els.briefRules.innerHTML = mode.rules.map(r=>'<li>'+r+'</li>').join('');
+    els.briefFlow.innerHTML = mode.flow.map((f,i)=>
+      '<div class="fstep"><b style="color:'+mode.color+'">'+(i+1)+' &middot; '+esc(f[0])+'</b><span>'+esc(f[1])+'</span></div>'
+    ).join('<div class="arrow">&rarr;</div>');
+    els.modeSelect.hidden=true; els.briefing.hidden=false; els.report.hidden=true; els.game.hidden=true;
+    els.capKeys.textContent = mode.key==='blind' ? '1-3 clues · 4-7 options · Enter lock in · R repeat · T time' : 'Keys 1-3 clues · 4-7 options · Enter lock in';
+    announce(mode.label+' selected. '+mode.title+' Press start when you are ready.');
+    els.startBtn.focus();
+  }
+
+  /* ---------- round engine ---------- */
+  function freshState(){ return { round:0, score:0, lives:3, correctCount:0, phase:'evidence', opened:[false,false,false], answer:null, timerId:null, replaysLeft:3, timeLeft:0, budget:0 }; }
+  function clues(t){ return [ t.ev[0], t.ev[1], {label:t.clueLabel, val:t.clue, audio:true} ]; }
+
+  function renderShiftBar(){
+    els.shiftBar.innerHTML='';
+    TICKETS.forEach((_,i)=>{ const b=document.createElement('i'); if(i<state.round) b.className='done'; else if(i===state.round) b.className='now'; els.shiftBar.appendChild(b); });
+  }
+  function setHud(){
+    els.roundNo.textContent=(state.round+1)+' / '+TICKETS.length;
+    els.scoreNo.textContent=state.score;
+    els.livesNo.textContent='●●●'.slice(0,state.lives)+'○○○'.slice(0,3-state.lives);
+    els.modeNo.textContent=mode.short;
+    renderShiftBar();
+  }
+  function setPhase(p){
+    state.phase=p;
+    const banners={
+      evidence: mode.solo ? 'Open all three clues, then make the call.' : 'Deaf: open the two visible tiles. Blind: play tile 3 on headphones.',
+      decide:   mode.solo ? 'All three clues are in. Pick the right triage call and lock it in.' : 'Mute: combine the three clues and lock the call in.',
+      done:     'Ticket closed — read the pattern, then move on.'
+    };
+    const nums={evidence:'1', decide:'2', done:'3'};
+    els.stepBanner.innerHTML='<span class="num">'+nums[p]+'</span><span class="txt">'+esc(banners[p])+'</span>';
+    els.evCard.classList.toggle('dim', p!=='evidence');
+    els.decideCard.classList.toggle('dim', p!=='decide');
+  }
+
+  function startTimer(budget){
+    clearInterval(state.timerId);
+    state.budget=budget; state.timeLeft=budget;
+    els.timerBar.classList.remove('low'); els.timerFill.style.width='100%'; els.timerNum.textContent=budget+'s';
+    state.timerId=setInterval(()=>{
+      state.timeLeft--;
+      els.timerNum.textContent=Math.max(0,state.timeLeft)+'s';
+      els.timerFill.style.width=Math.max(0,(state.timeLeft/state.budget)*100)+'%';
+      els.timerBar.classList.toggle('low', state.timeLeft<=10);
+      if(state.timeLeft===10){ announce('Ten seconds left.', {alert:'bad', tone:[520,.08], buzz:[80,60,80]}); }
+      else if(state.timeLeft<=5 && state.timeLeft>0){ beep(560,.07); flash(false); }
+      if(state.timeLeft<=0){ clearInterval(state.timerId); failTicket(); }
+    },1000);
+  }
+
+  function renderEvidence(t){
+    const cl=clues(t);
+    els.evGrid.innerHTML='';
+    cl.forEach((c,i)=>{
+      const isAudioTile = i===2;
+      const hideText = isAudioTile && mode.hideClueText;      // team mode only
+      const b=document.createElement('button');
+      b.className='ev-tile'+(isAudioTile?' audio':'')+(state.opened[i]?' revealed':'');
+      b.type='button';
+      if(state.opened[i]){
+        if(hideText){
+          b.innerHTML='<div class="lbl">'+esc(c.label)+' &middot; heard</div><div class="cue">Played on headphones. Say it out loud to the crew.</div>';
+        } else {
+          b.innerHTML='<div class="lbl">'+esc(c.label)+'</div><div class="val">'+esc(c.val)+'</div>';
+        }
+        b.setAttribute('aria-label', 'Clue '+(i+1)+', '+c.label+ (hideText?', played on headphones':', '+c.val));
+      } else {
+        const cue = mode.key==='blind' ? 'Press to hear clue '+(i+1) : (isAudioTile && mode.hideClueText ? 'Headphones — play clue 3' : 'Tap to open clue '+(i+1));
+        b.innerHTML='<div class="chan">Clue '+(i+1)+' &middot; '+(isAudioTile? (mode.speakClues?'audio + text':'transcript') : 'text')+'</div><div class="cue">'+esc(cue)+'</div>';
+        b.setAttribute('aria-label', cue);
+      }
+      b.addEventListener('click', ()=> openClue(i));
+      els.evGrid.appendChild(b);
+    });
+    els.evWho.textContent = mode.solo ? 'You hold all three' : 'Deaf: 1 & 2 · Blind: 3';
+    els.replayRow.hidden = !mode.showPlayAll;
+    els.playAllLabel.textContent = 'Read all evidence aloud';
+    els.evHint.textContent = mode.key==='blind' ? 'Keys 1, 2, 3 read a clue. R repeats the last line.'
+      : (mode.key==='deaf' ? 'No audio needed — clue 3 is the full transcript.' : 'Read them, or have them read to you.');
+  }
+
+  function openClue(i){
+    if(state.phase!=='evidence' && state.opened[i]) { speakClue(i); return; }
+    const t=TICKETS[state.round], c=clues(t)[i];
+    const first=!state.opened[i];
+    state.opened[i]=true;
+    renderEvidence(t);
+    speakClue(i);
+    if(first && !mode.speakClues){
+      els.capText.textContent='Clue '+(i+1)+' — '+c.label+': '+c.val;
+    }
+    if(state.opened.every(Boolean) && state.phase==='evidence'){
+      setPhase('decide');
+      announce('All three clues are open. Choose the right call.', {tone:[660,.09]});
+      if(mode.speakClues) setTimeout(()=>speakChoices(), 600);
+    }
+  }
+  function speakClue(i){
+    const t=TICKETS[state.round], c=clues(t)[i];
+    if(!mode.speakClues) return;
+    const text='Clue '+(i+1)+'. '+c.label+'. '+c.val;
+    els.capText.textContent=text;
+    speak(text, true);
+  }
+  function speakChoices(){
+    if(!mode.speakClues) return;
+    const txt='Your options. '+state.shuffled.map((c,i)=>'Key '+(i+4)+'. '+c.text+'.').join(' ')+' Press Enter to lock in your choice.';
+    els.capText.textContent='Options read aloud — keys 4 to 7, then Enter.';
+    speak(txt, true);
+  }
+
+  function shuffled(a){ const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
+
+  function renderChoices(){
+    els.choices.innerHTML='';
+    state.shuffled.forEach((c,i)=>{
+      const b=document.createElement('button');
+      b.className='choice-btn'+(state.answer===i?' sel':'');
+      b.type='button';
+      b.innerHTML='<span class="key">'+(i+4)+'</span><span>'+esc(c.text)+'</span>';
+      b.setAttribute('aria-label','Option key '+(i+4)+'. '+c.text);
+      b.addEventListener('click', ()=> pick(i));
+      els.choices.appendChild(b);
+    });
+    els.submitBtn.disabled = state.answer===null;
+    els.decWho.textContent = mode.solo ? 'You decide' : 'Mute decides';
+    els.decHint.textContent = 'Keys 4-7 pick · Enter locks in';
+  }
+  function pick(i){
+    if(state.phase==='done') return;
+    state.answer=i; renderChoices();
+    const c=state.shuffled[i];
+    announce('Selected: '+c.text+'. Press Enter or Lock in to confirm.');
+  }
+
+  function startRound(idx){
+    clearInterval(state.timerId);
+    const t=TICKETS[idx];
+    state.opened=[false,false,false]; state.answer=null; state.replaysLeft=3;
+    state.shuffled = shuffled(t.choices.map((c,i)=>({text:c, correct:i===t.correct})));
+    els.catBadge.textContent=t.category;
+    els.feedbackWrap.innerHTML='';
+    setHud();
+    renderEvidence(t);
+    renderChoices();
+    if(mode.autoOpenClue){
+      // Blind mode: nothing is hidden behind a tap you cannot see — the clues
+      // are announced as soon as the ticket opens, and repeat on 1/2/3.
+      state.opened=[true,true,true];
+      renderEvidence(t);
+      setPhase('decide');
+    } else {
+      setPhase('evidence');
+    }
+    startTimer(mode.timer);
+    const intro='Ticket '+(idx+1)+' of '+TICKETS.length+'. Category: '+t.category+'. '+mode.timer+' seconds on the clock.';
+    announce(intro, {tone:[480,.1]});
+    if(mode.autoOpenClue){
+      setTimeout(()=>{
+        const all=clues(t).map((c,i)=>'Clue '+(i+1)+'. '+c.label+'. '+c.val).join(' ');
+        speak(intro+' '+all, true);
+        els.capText.textContent='All three clues read out. Keys 4 to 7 to choose.';
+        setTimeout(()=>speakChoices(), 200);
+      }, 400);
+    }
+  }
+
+  function submit(){
+    if(state.phase==='done' || state.answer===null) return;
+    const t=TICKETS[state.round];
+    const ok = state.shuffled[state.answer].correct;
+    clearInterval(state.timerId);
+    if(ok){ state.score += 100 + Math.max(0, state.timeLeft*3); state.correctCount++; }
+    else { state.lives--; }
+    setHud();
+    showFeedback(t, ok, null);
+  }
+  function failTicket(){
+    if(state.phase==='done') return;
+    const t=TICKETS[state.round];
+    state.lives--; setHud();
+    showFeedback(t, false, 'Time ran out — the window to act closed.');
+  }
+
+  function showFeedback(t, ok, note){
+    setPhase('done');
+    const right = state.shuffled.find(c=>c.correct);
+    const fb=document.createElement('div');
+    fb.className='feedback '+(ok?'good':'bad');
+    fb.innerHTML='<div class="verdict">'+(ok?'✓ CORRECT CALL':'✗ WRONG CALL')+'</div>'+
+      (note?'<p>'+esc(note)+'</p>':'')+
+      (ok?'':'<p><b>The right call was:</b> '+esc(right.text)+'</p>')+
+      '<p>'+esc(t.why)+'</p>'+
+      '<div class="flags">'+t.flags.map(f=>'<span>'+esc(f)+'</span>').join('')+'</div>'+
+      '<button class="next-btn" id="nextBtn">'+(state.round+1>=TICKETS.length?'See shift report →':'Next ticket →')+'</button>';
+    els.feedbackWrap.innerHTML=''; els.feedbackWrap.appendChild(fb);
+    Array.from(els.choices.children).forEach((b,i)=>{ b.disabled=true; if(state.shuffled[i].correct) b.style.borderColor='var(--safe)'; });
+    els.submitBtn.disabled=true;
+
+    const spoken=(ok?'Correct call. ':'Wrong call. The right call was: '+right.text+'. ')+t.why+' Red flags: '+t.flags.join('. ')+'. Press N for the next ticket.';
+    announce(spoken, {alert: ok?'good':'bad', tone: ok?[880,.14]:[180,.22,'sawtooth'], buzz: ok?[40]:[120,70,120]});
+    document.getElementById('nextBtn').addEventListener('click', advance);
+    document.getElementById('nextBtn').focus();
+  }
+
+  function advance(){
+    if(state.lives<=0){ showReport(true); return; }
+    state.round++;
+    if(state.round>=TICKETS.length){ showReport(false); return; }
+    startRound(state.round);
+  }
+
+  function showReport(breached){
+    clearInterval(state.timerId);
+    els.game.hidden=true; els.report.hidden=false;
+    const total=TICKETS.length;
+    const attempted = breached ? state.round+1 : total;
+    const acc = Math.round((state.correctCount/attempted)*100) || 0;
+    let rank='Rookie — training recommended', cls='rookie';
+    if(!breached && acc>=90){ rank='Elite Analyst'; cls='elite'; }
+    else if(!breached && acc>=70){ rank='Senior Analyst'; cls='senior'; }
+    else if(acc>=50){ rank='Analyst'; cls='analyst'; }
+    if(breached){ rank='Shift Breached'; cls='rookie'; }
+    els.rankTitle.textContent=rank; els.rankTitle.className='rank '+cls;
+    els.rankLine.textContent = breached
+      ? 'Ran out of lives at ticket '+(state.round+1)+' of '+total+'.'
+      : state.correctCount+' of '+total+' tickets triaged correctly.';
+    els.repScore.textContent=state.score;
+    els.repAcc.textContent=acc+'%';
+    els.repLives.textContent=Math.max(0,state.lives);
+    board.push({mode:mode.short, score:state.score, acc:acc, rank:rank});
+    renderBoard();
+    announce('Shift complete. '+rank+'. Score '+state.score+', accuracy '+acc+' percent.', {alert: breached?'bad':'good', tone: breached?[180,.22,'sawtooth']:[880,.14]});
+    els.againBtn.focus();
+  }
+  function renderBoard(){
+    if(!board.length){ els.boardBody.innerHTML='<p class="empty">No shifts logged yet.</p>'; return; }
+    const rows=board.slice().sort((a,b)=>b.score-a.score);
+    els.boardBody.innerHTML='<table><tr><th>#</th><th>Score</th><th>Accuracy</th><th>Rank</th><th>Mode</th></tr>'+
+      rows.map((r,i)=>'<tr><td class="num">'+(i+1)+'</td><td class="num">'+r.score+'</td><td class="num">'+r.acc+'%</td><td>'+esc(r.rank)+'</td><td>'+esc(r.mode)+'</td></tr>').join('')+
+      '</table>';
+  }
+
+  function begin(){
+    if(SPEECH_OK && mode.speakEvents){ try{ window.speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){} }
+    state=freshState();
+    els.briefing.hidden=true; els.report.hidden=true; els.modeSelect.hidden=true; els.game.hidden=false;
+    startRound(0);
+  }
+  function toModeSelect(){
+    if(state) clearInterval(state.timerId);
+    try{ if(SPEECH_OK) window.speechSynthesis.cancel(); }catch(e){}
+    els.modeSelect.hidden=false; els.briefing.hidden=true; els.game.hidden=true; els.report.hidden=true;
+    els.modeTag.textContent='a security triage drill — one game, three ways in';
+    els.capText.textContent='Choose a mode to begin.';
+  }
+
+  els.startBtn.addEventListener('click', begin);
+  els.backBtn.addEventListener('click', toModeSelect);
+  els.againBtn.addEventListener('click', begin);
+  els.switchBtn.addEventListener('click', toModeSelect);
+  els.playAllBtn.addEventListener('click', ()=>{
+    if(els.game.hidden || !state) return;
+    const t=TICKETS[state.round];
+    state.opened=[true,true,true]; renderEvidence(t);
+    if(state.phase==='evidence') setPhase('decide');
+    const all=clues(t).map((c,i)=>'Clue '+(i+1)+'. '+c.label+'. '+c.val).join(' ');
+    els.capText.textContent='Reading all three clues.';
+    speak(all, true);
+  });
+
+  document.addEventListener('keydown', e=>{
+    if(els.game.hidden || !state) return;
+    const k=e.key;
+    if(k>='1' && k<='3'){ e.preventDefault(); openClue(parseInt(k,10)-1); }
+    else if(k>='4' && k<='7'){ const i=parseInt(k,10)-4; if(state.shuffled && i<state.shuffled.length){ e.preventDefault(); pick(i); } }
+    else if(k==='Enter'){ if(state.phase==='decide'){ e.preventDefault(); submit(); } else if(state.phase==='done'){ e.preventDefault(); advance(); } }
+    else if(k==='n'||k==='N'){ if(state.phase==='done'){ e.preventDefault(); advance(); } }
+    else if(k==='r'||k==='R'){ e.preventDefault(); els.capText.textContent=lastSpoken; speak(lastSpoken, true); }
+    else if(k==='t'||k==='T'){ e.preventDefault(); announce(Math.max(0,state.timeLeft)+' seconds left on this ticket.'); }
+  });
+
+  els.submitBtn.addEventListener('click', submit);
+  renderModes();
+  renderBoard();
+})();
+</script>
+</body>
+</html>

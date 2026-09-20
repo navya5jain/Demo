@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ladder of Why</title>
+<meta name="description" content="Describe something that really happened, then climb a ladder of questions about it.">
+<meta name="theme-color" content="#a5741f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Libre+Franklin:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="brandbar">
+    <div class="brand">
+      <h1>Ladder of Why</h1>
+      <span class="sub">a critical-thinking game</span>
+    </div>
+    <div class="player" id="playerBox">
+      <div class="player-line">
+        <span class="rank" id="rankName">Curious Novice</span>
+        <span class="xp" id="xpText">0 XP</span>
+      </div>
+      <div class="xpbar"><div class="xpbar-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+  </header>
+
+  <!-- ---------------- SETUP ---------------- -->
+  <section id="setupView" class="card">
+    <p class="lede">
+      Describe something real that happened &mdash; an argument, an accident, a decision, a rumour.
+      You'll climb a short ladder of questions built <em>for that situation</em>, each rung asking you to
+      reason a little more carefully than the last: from what happened, to why it really happened, to what
+      you're assuming, to how someone else would tell it, to the lesson underneath.
+    </p>
+
+    <label class="field-label" for="scenarioInput">What happened?</label>
+    <textarea id="scenarioInput" rows="3"
+      placeholder="e.g. There was an accident on the road when I was going to college."></textarea>
+
+    <div class="chips" id="chipRow">
+      <button class="chip" type="button" data-fill="There was an accident on the road when I was going to college.">a road accident</button>
+      <button class="chip" type="button" data-fill="My friend suddenly stopped replying to my texts.">a friend went quiet</button>
+      <button class="chip" type="button" data-fill="I studied hard for the exam but still failed it.">failed an exam</button>
+      <button class="chip" type="button" data-fill="A rumour about our professor spread across the whole campus in one day.">a campus rumour</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="primary" id="startBtn" type="button">Build my ladder</button>
+      <span class="thinking" id="setupThinking" hidden>
+        <span class="inkdot"></span><span class="inkdot"></span><span class="inkdot"></span>
+        <span id="setupThinkingText">writing your questions</span>
+      </span>
+    </div>
+    <p class="notice" id="setupNotice" hidden></p>
+
+    <div class="history" id="historyBlock" hidden>
+      <h2 class="section-h">Earlier cases</h2>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <!-- ---------------- GAME ---------------- -->
+  <section id="gameView" hidden>
+    <p class="scenario-strip" id="scenarioStrip"></p>
+    <div class="game">
+      <nav class="ladder" id="ladderRail" aria-label="Ladder progress"></nav>
+      <div class="qcard">
+        <span class="concept-tag" id="conceptTag"></span>
+        <span class="eyebrow" id="rungOf"></span>
+        <h2 id="rungTitle"></h2>
+        <p class="question-text" id="questionText"></p>
+
+        <label class="field-label" for="answerInput">Your reasoning</label>
+        <textarea id="answerInput" rows="4"
+          placeholder="Think it through in a few sentences. The more specific you are, the better it can be graded."></textarea>
+
+        <div class="feedback" id="feedbackBox" hidden></div>
+
+        <div class="btn-row">
+          <button class="primary" id="submitAnswerBtn" type="button">Submit answer</button>
+          <button class="primary" id="nextRungBtn" type="button" hidden>Next rung &rarr;</button>
+          <button class="primary" id="finishBtn" type="button" hidden>See my reasoning report &rarr;</button>
+          <button class="ghost" id="quitBtn" type="button">Abandon case</button>
+          <span class="thinking" id="answerThinking" hidden>
+            <span class="inkdot"></span><span class="inkdot"></span><span class="inkdot"></span>
+            <span>grading your reasoning</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------- REPORT ---------------- -->
+  <section id="reportView" class="card" hidden>
+    <span class="eyebrow">case closed</span>
+    <h2 class="report-title" id="reportTitle"></h2>
+    <p class="lede" id="reportLine"></p>
+    <div class="skills" id="skillPills"></div>
+    <div id="newBadges"></div>
+    <div id="recapList"></div>
+    <div class="btn-row">
+      <button class="primary" id="newCaseBtn" type="button">Start a new case</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span id="providerNote">checking engine&hellip;</span>
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

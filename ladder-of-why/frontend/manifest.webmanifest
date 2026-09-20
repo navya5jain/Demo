@@ -1,0 +1,12 @@
+{
+  "name": "Ladder of Why",
+  "short_name": "Ladder",
+  "description": "Describe something that really happened, then climb a ladder of questions about it.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#e9e4d4",
+  "theme_color": "#a5741f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

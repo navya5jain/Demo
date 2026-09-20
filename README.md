@@ -1,6 +1,6 @@
 # Demo
 
-A collection of projects: an accessibility-first game hub, a standalone accessible security-triage game, and a predictions + AI-chatbot module for a student expense tracker (SIH project).
+A collection of projects: an accessibility-first game hub, a standalone accessible security-triage game, a predictions + AI-chatbot module for a student expense tracker (SIH project), and a critical-thinking game built on epistemology.
 
 ## Unity Quest (`unity-quest/`)
 
@@ -39,3 +39,9 @@ A drop-in module for a student expense-tracker app, adding smarter predictions a
 - `Chatbot.js` / `.css` — floating chat widget; calls `POST /api/chatbot` and renders the conversation.
 
 This folder is a set of source files meant to be merged into an existing backend/frontend project (see the integration guide) — it isn't a standalone runnable app on its own.
+
+## Ladder of Why (`ladder-of-why/`)
+
+A critical-thinking game built on epistemology. The player describes something that really happened to them, and the app builds a ladder of 3–5 questions about that specific situation, each rung demanding more careful reasoning than the last (immediate observation vs. inference, root-cause, assumptions/evidence, alternative explanations, transferable principle). Answers are scored 1–5 with feedback, and the player earns XP, ranks, and badges.
+
+Run it: `pip install -r ladder-of-why/requirements.txt && python -m backend.app` from inside `ladder-of-why/` (see `ladder-of-why/README.md` for full setup, including LLM provider config).

@@ -39,7 +39,3 @@ A drop-in module for a student expense-tracker app, adding smarter predictions a
 - `Chatbot.js` / `.css` — floating chat widget; calls `POST /api/chatbot` and renders the conversation.
 
 This folder is a set of source files meant to be merged into an existing backend/frontend project (see the integration guide) — it isn't a standalone runnable app on its own.
-
-## Other files
-
-- `hello.py`, `newfile` — empty placeholder files from early repo setup.

@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATTENDLY – Smart Student Attendance & Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .glass-header {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(14px);
+    }
+    @media print {
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 antialiased selection:bg-purple-600 selection:text-white">
+  <div id="app"></div>
+
+  <script>
+    // ==========================================================================
+    // ATTENDLY - ZERO-DEPENDENCY PURE ES6 APPLICATION ENGINE (NETLIFY READY)
+    // ==========================================================================
+    function calcClassesNeededFor75(attended, total) {
+      if (!total || total <= 0) return 0;
+      return Math.max(0, 3 * total - 4 * attended);
+    }
+
+    function getBadgeColor(pct) {
+      if (pct >= 80) return 'Green';
+      if (pct >= 75) return 'Yellow';
+      return 'Red';
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // Central Application State
+    const state = {
+      selectedPortal: 'student', // 'student' | 'teacher' | 'admin'
+      authMode: 'login',         // 'login' | 'register'
+      currentUser: null,
+      activeTab: 'overview',
+      toast: null,
+      loginEmail: 'aarav@attendly.edu',
+      loginPassword: 'student123',
+      selectedStudentId: 5,
+      doubtFilter: 'All',
+      simExtraClasses: 12,
+      markSheetSubjectId: 1,
+      markSheetDate: '2026-11-10',
+      markSheetStatus: { 5: 'Absent', 6: 'Present', 7: 'Present', 8: 'Absent' },
+      selectedEmailAlertId: null,
+      reviewModalLeaveId: null,
+
+      teachers: [
+        { id: 2, full_name: 'Prof. Ananya Deshmukh', email: 'ananya@attendly.edu', roll_or_emp_id: 'FAC-CSE-101', department_id: 1, designation: 'Associate Professor (DBMS & ML)' },
+        { id: 3, full_name: 'Dr. Karthik Subramanian', email: 'karthik@attendly.edu', roll_or_emp_id: 'FAC-CSE-102', department_id: 1, designation: 'Professor (OS & Cloud)' },
+        { id: 4, full_name: 'Prof. Rohan Chatterjee', email: 'rohan@attendly.edu', roll_or_emp_id: 'FAC-CSE-103', department_id: 1, designation: 'Assistant Professor (Networks)' }
+      ],
+
+      subjects: [
+        { id: 1, name: 'Database Management Systems', code: 'CS501', department_id: 1, semester: 5, teacher_id: 2, schedule_slot: '09:00 AM - 10:00 AM' },
+        { id: 2, name: 'Operating Systems & Internals', code: 'CS502', department_id: 1, semester: 5, teacher_id: 3, schedule_slot: '10:15 AM - 11:15 AM' },
+        { id: 3, name: 'Computer Networks & Security', code: 'CS503', department_id: 1, semester: 5, teacher_id: 4, schedule_slot: '11:30 AM - 12:30 PM' },
+        { id: 4, name: 'Machine Learning Foundations', code: 'CS504', department_id: 1, semester: 5, teacher_id: 2, schedule_slot: '01:30 PM - 02:30 PM' },
+        { id: 5, name: 'Software Engineering & Cloud', code: 'CS505', department_id: 1, semester: 5, teacher_id: 3, schedule_slot: '02:45 PM - 03:45 PM' }
+      ],
+
+      students: [
+        {
+          student_id: 5,
+          full_name: 'Aarav Sharma',
+          roll_number: '21CSE042',
+          email: 'aarav@attendly.edu',
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Suresh Sharma',
+          parent_email: 'suresh.sharma@parentmail.com',
+          notify_parent_email: true,
+          subject_stats: [
+            { subject_id: 1, attended: 14, total: 20 },
+            { subject_id: 2, attended: 13, total: 20 },
+            { subject_id: 3, attended: 13, total: 20 },
+            { subject_id: 4, attended: 15, total: 20 },
+            { subject_id: 5, attended: 13, total: 20 }
+          ],
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 26, missed: 9, percentage: 74.3 },
+            { month: 'Oct 2026', conducted: 35, attended: 24, missed: 11, percentage: 68.6 },
+            { month: 'Nov 2026', conducted: 30, attended: 18, missed: 12, percentage: 60.0 }
+          ]
+        },
+        {
+          student_id: 6,
+          full_name: 'Priya Nair',
+          roll_number: '21CSE018',
+          email: 'priya@attendly.edu',
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Venugopal Nair',
+          parent_email: 'venugopal.nair@parentmail.com',
+          notify_parent_email: true,
+          subject_stats: [
+            { subject_id: 1, attended: 19, total: 20 },
+            { subject_id: 2, attended: 18, total: 20 },
+            { subject_id: 3, attended: 18, total: 20 },
+            { subject_id: 4, attended: 19, total: 20 },
+            { subject_id: 5, attended: 18, total: 20 }
+          ],
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 33, missed: 2, percentage: 94.3 },
+            { month: 'Oct 2026', conducted: 35, attended: 32, missed: 3, percentage: 91.4 },
+            { month: 'Nov 2026', conducted: 30, attended: 27, missed: 3, percentage: 90.0 }
+          ]
+        },
+        {
+          student_id: 7,
+          full_name: 'Rohan Verma',
+          roll_number: '21CSE055',
+          email: 'rohan.v@attendly.edu',
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Mahesh Verma',
+          parent_email: 'mahesh.verma@parentmail.com',
+          notify_parent_email: true,
+          subject_stats: [
+            { subject_id: 1, attended: 15, total: 20 },
+            { subject_id: 2, attended: 16, total: 20 },
+            { subject_id: 3, attended: 15, total: 20 },
+            { subject_id: 4, attended: 15, total: 20 },
+            { subject_id: 5, attended: 15, total: 20 }
+          ],
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 27, missed: 8, percentage: 77.1 },
+            { month: 'Oct 2026', conducted: 35, attended: 26, missed: 9, percentage: 74.3 },
+            { month: 'Nov 2026', conducted: 30, attended: 23, missed: 7, percentage: 76.7 }
+          ]
+        },
+        {
+          student_id: 8,
+          full_name: 'Sneha Patel',
+          roll_number: '21CSE063',
+          email: 'sneha@attendly.edu',
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Kishore Patel',
+          parent_email: 'kishore.patel@parentmail.com',
+          notify_parent_email: true,
+          subject_stats: [
+            { subject_id: 1, attended: 13, total: 20 },
+            { subject_id: 2, attended: 12, total: 20 },
+            { subject_id: 3, attended: 13, total: 20 },
+            { subject_id: 4, attended: 13, total: 20 },
+            { subject_id: 5, attended: 13, total: 20 }
+          ],
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 24, missed: 11, percentage: 68.6 },
+            { month: 'Oct 2026', conducted: 35, attended: 22, missed: 13, percentage: 62.9 },
+            { month: 'Nov 2026', conducted: 30, attended: 18, missed: 12, percentage: 60.0 }
+          ]
+        }
+      ],
+
+      dailyAlerts: [
+        {
+          id: 101,
+          student_id: 5,
+          student_name: 'Aarav Sharma',
+          roll_number: '21CSE042',
+          department_name: 'Computer Science & Engineering',
+          year: 3,
+          absence_date: '2026-11-09',
+          parent_email: 'suresh.sharma@parentmail.com',
+          attendance_status: 'Full-Day Absent (5/5 Classes Missed)',
+          delivery_status: 'Sent (1 Consolidated Daily Email)',
+          email_subject: '[ATTENDLY Consolidated Daily Alert] Full-Day Absence Notice - Aarav Sharma (2026-11-09)',
+          email_body: 'Dear Suresh Sharma,\n\nThis is an automated consolidated end-of-day attendance notification from ATTENDLY.\n\nStudent Name      : Aarav Sharma (21CSE042)\nDate              : November 09, 2026\nDepartment        : Computer Science & Engineering\nAcademic Year     : Year 3 (Semester 5)\nAttendance Status : FULL-DAY ABSENT (5/5 scheduled classes missed)\n\nNote: Separate per-class emails were suppressed to send you a single consolidated daily notification.\n\nRegards,\nATTENDLY Academic Monitoring Cell'
+        },
+        {
+          id: 102,
+          student_id: 8,
+          student_name: 'Sneha Patel',
+          roll_number: '21CSE063',
+          department_name: 'Computer Science & Engineering',
+          year: 3,
+          absence_date: '2026-11-05',
+          parent_email: 'kishore.patel@parentmail.com',
+          attendance_status: 'Full-Day Absent (5/5 Classes Missed)',
+          delivery_status: 'Sent (1 Consolidated Daily Email)',
+          email_subject: '[ATTENDLY Consolidated Daily Alert] Full-Day Absence Notice - Sneha Patel (2026-11-05)',
+          email_body: 'Dear Kishore Patel,\n\nThis is an automated consolidated end-of-day attendance notification from ATTENDLY.\n\nStudent Name      : Sneha Patel (21CSE063)\nDate              : November 05, 2026\nDepartment        : Computer Science & Engineering\nAcademic Year     : Year 3 (Semester 5)\nAttendance Status : FULL-DAY ABSENT (5/5 scheduled classes missed)\n\nRegards,\nATTENDLY Academic Monitoring Cell'
+        }
+      ],
+
+      doubts: [
+        {
+          id: 1,
+          student_id: 5,
+          student_name: 'Aarav Sharma',
+          student_roll: '21CSE042',
+          subject_id: 1,
+          subject_name: 'Database Management Systems',
+          subject_code: 'CS501',
+          teacher_id: 2,
+          teacher_name: 'Prof. Ananya Deshmukh',
+          title: 'B+ Tree Indexing vs Hash Indexing in PostgreSQL',
+          description: 'In Lecture 14 we discussed range queries on composite keys. Why does PostgreSQL default to B-Tree instead of Hash index for equality + range predicates?',
+          attachment_name: 'btree_vs_hash_benchmark.pdf',
+          status: 'Answered',
+          teacher_reply: 'Great question, Aarav! B-Tree stores keys in sorted order, allowing O(log N) traversal for both equality and range queries (<, >, BETWEEN), whereas Hash indexes only support exact equality (=) lookups.'
+        },
+        {
+          id: 2,
+          student_id: 6,
+          student_name: 'Priya Nair',
+          student_roll: '21CSE018',
+          subject_id: 2,
+          subject_name: 'Operating Systems & Internals',
+          subject_code: 'CS502',
+          teacher_id: 3,
+          teacher_name: 'Dr. Karthik Subramanian',
+          title: 'Deadlock Avoidance: Bankers Algorithm Safe Sequence',
+          description: 'When multiple processes request resources simultaneously, how do we verify safe state if the Available vector changes mid-cycle?',
+          attachment_name: 'bankers_matrix_work.png',
+          status: 'Resolved',
+          teacher_reply: 'Priya, each resource request is evaluated atomically using the Safety Algorithm before allocation is committed.'
+        },
+        {
+          id: 3,
+          student_id: 8,
+          student_name: 'Sneha Patel',
+          student_roll: '21CSE063',
+          subject_id: 4,
+          subject_name: 'Machine Learning Foundations',
+          subject_code: 'CS504',
+          teacher_id: 2,
+          teacher_name: 'Prof. Ananya Deshmukh',
+          title: 'Overfitting in Gradient Boosted Trees vs Random Forest',
+          description: 'My validation loss starts increasing after 150 estimators in Gradient Boosting. Should I reduce learning_rate or max_depth first?',
+          attachment_name: 'validation_loss_plot.png',
+          status: 'Pending',
+          teacher_reply: ''
+        }
+      ],
+
+      ratings: [
+        {
+          id: 1,
+          from_user_name: 'Aarav Sharma (Student)',
+          to_user_name: 'Prof. Ananya Deshmukh',
+          direction: 'student_to_teacher',
+          overall_score: 5.0,
+          comment: 'Explains complex DBMS indexing and query optimization with real production benchmarks!'
+        },
+        {
+          id: 2,
+          from_user_name: 'Prof. Ananya Deshmukh (Faculty)',
+          to_user_name: 'Aarav Sharma',
+          direction: 'teacher_to_student',
+          overall_score: 4.33,
+          comment: 'Aarav asks insightful questions in DBMS lab, but needs to improve morning lecture attendance to clear the 75% Red Line.'
+        }
+      ],
+
+      redlineLogs: [
+        {
+          id: 1,
+          student_id: 5,
+          student_name: 'Aarav Sharma',
+          roll_number: '21CSE042',
+          notification_type: 'WARNING_BELOW_75',
+          attendance_percentage: 68.0,
+          classes_needed: 28,
+          message: 'RED LINE WARNING: Your overall attendance is 68.0% (below the mandatory 75% requirement). You must attend 28 additional consecutive classes to reach 75%.'
+        },
+        {
+          id: 2,
+          student_id: 8,
+          student_name: 'Sneha Patel',
+          roll_number: '21CSE063',
+          notification_type: 'WARNING_BELOW_75',
+          attendance_percentage: 64.0,
+          classes_needed: 44,
+          message: 'RED LINE WARNING: Your overall attendance is 64.0% (below 75%). You need 44 consecutive classes to recover.'
+        }
+      ],
+
+      leaveRequests: [
+        {
+          id: 1,
+          student_id: 5,
+          student_name: 'Aarav Sharma',
+          roll_number: '21CSE042',
+          subject_id: 1,
+          subject_name: 'Database Management Systems',
+          absence_date: '2026-11-09',
+          reason_category: 'Medical Emergency',
+          explanation_text: 'Had acute viral fever and visited Apollo Clinic for blood work and physician consultation. Medical certificate attached for verification.',
+          document_name: 'apollo_medical_certificate_nov9.pdf',
+          status: 'Pending',
+          reviewer_name: null,
+          reviewer_comment: '',
+          convert_to_present: false
+        },
+        {
+          id: 2,
+          student_id: 8,
+          student_name: 'Sneha Patel',
+          roll_number: '21CSE063',
+          subject_id: 3,
+          subject_name: 'Computer Networks & Security',
+          absence_date: '2026-11-05',
+          reason_category: 'Family Emergency',
+          explanation_text: 'Had to travel out of station with family due to an urgent family medical situation.',
+          document_name: 'parent_signed_letter.pdf',
+          status: 'Approved',
+          reviewer_name: 'Prof. Ananya Deshmukh',
+          reviewer_comment: 'Verified parent letter. Explanation recorded on file; per college policy, attendance remains unchanged unless medical condonation is checked.',
+          convert_to_present: false
+        }
+      ]
+    };
+
+    function getEnrichedStudents() {
+      return state.students.map(function(st) {
+        const total_classes = st.subject_stats.reduce(function(acc, s) { return acc + s.total; }, 0);
+        const attended_classes = st.subject_stats.reduce(function(acc, s) { return acc + s.attended; }, 0);
+        const missed_classes = total_classes - attended_classes;
+        const overall_percentage = total_classes > 0 ? Number(((attended_classes / total_classes) * 100).toFixed(2)) : 100;
+        const classes_needed_for_75 = calcClassesNeededFor75(attended_classes, total_classes);
+        const status_color = getBadgeColor(overall_percentage);
+
+        const subject_breakdown = st.subject_stats.map(function(ss) {
+          const subj = state.subjects.find(function(sub) { return sub.id === ss.subject_id; }) || state.subjects[0];
+          const teacher = state.teachers.find(function(t) { return t.id === (subj ? subj.teacher_id : 2); });
+          const pct = ss.total > 0 ? Number(((ss.attended / ss.total) * 100).toFixed(1)) : 100;
+          return {
+            subject_id: ss.subject_id,
+            subject_name: subj ? subj.name : 'Subject',
+            subject_code: subj ? subj.code : 'CS500',
+            schedule_slot: subj ? subj.schedule_slot : '09:00 AM',
+            teacher_name: teacher ? teacher.full_name : 'Faculty',
+            total_classes: ss.total,
+            attended: ss.attended,
+            missed: ss.total - ss.attended,
+            percentage: pct,
+            status_color: getBadgeColor(pct),
+            classes_needed_for_75: calcClassesNeededFor75(ss.attended, ss.total)
+          };
+        });
+
+        return Object.assign({}, st, {
+          total_classes: total_classes,
+          attended_classes: attended_classes,
+          missed_classes: missed_classes,
+          overall_percentage: overall_percentage,
+          classes_needed_for_75: classes_needed_for_75,
+          status_color: status_color,
+          is_redline: overall_percentage < 75.0,
+          subject_breakdown: subject_breakdown
+        });
+      });
+    }
+
+    function getActiveStudent(enriched) {
+      if (state.currentUser && state.currentUser.role === 'student') {
+        return enriched.find(function(s) { return s.email.toLowerCase() === state.currentUser.email.toLowerCase(); }) || enriched[0];
+      }
+      return enriched.find(function(s) { return s.student_id === Number(state.selectedStudentId); }) || enriched[0];
+    }
+
+    function showToast(msg, type) {
+      state.toast = { msg: msg, type: type || 'success' };
+      renderApp();
+      setTimeout(function() {
+        state.toast = null;
+        renderApp();
+      }, 4000);
+    }
+
+    // ==========================================================================
+    // GLOBAL ACTION HANDLERS
+    // ==========================================================================
+    window.selectPortal = function(portal) {
+      state.selectedPortal = portal;
+      state.authMode = 'login';
+      if (portal === 'student') {
+        state.loginEmail = 'aarav@attendly.edu';
+        state.loginPassword = 'student123';
+      } else if (portal === 'teacher') {
+        state.loginEmail = 'ananya@attendly.edu';
+        state.loginPassword = 'teacher123';
+      } else {
+        state.loginEmail = 'admin@attendly.edu';
+        state.loginPassword = 'admin123';
+      }
+      renderApp();
+    };
+
+    window.setAuthMode = function(mode) {
+      state.authMode = mode;
+      renderApp();
+    };
+
+    window.autofillDemo = function(email, portal) {
+      state.selectedPortal = portal;
+      state.loginEmail = email;
+      state.loginPassword = portal + '123';
+      renderApp();
+    };
+
+    window.handleLoginSubmit = function(e) {
+      e.preventDefault();
+      const emailInput = document.getElementById('login-email');
+      const email = (emailInput ? emailInput.value : state.loginEmail).trim().toLowerCase();
+      const enriched = getEnrichedStudents();
+
+      if (state.selectedPortal === 'student') {
+        const foundStudent = enriched.find(function(s) { return s.email.toLowerCase() === email; });
+        if (!foundStudent) {
+          showToast('Access Denied: Only Student credentials work in the Student Portal! Faculty/Admin cannot log in here.', 'error');
+          return;
+        }
+        state.currentUser = {
+          id: foundStudent.student_id,
+          full_name: foundStudent.full_name,
+          email: foundStudent.email,
+          role: 'student',
+          roll_or_emp_id: foundStudent.roll_number
+        };
+        state.selectedStudentId = foundStudent.student_id;
+        state.activeTab = 'overview';
+        showToast('Welcome to the Student Portal, ' + foundStudent.full_name + '!');
+        return;
+      }
+
+      if (state.selectedPortal === 'teacher') {
+        const foundTeacher = state.teachers.find(function(t) { return t.email.toLowerCase() === email; });
+        if (!foundTeacher) {
+          showToast('Access Denied: Students cannot log into the Faculty Portal! Use authorized Faculty credentials.', 'error');
+          return;
+        }
+        state.currentUser = Object.assign({}, foundTeacher, { role: 'teacher' });
+        state.activeTab = 'faculty_rollcall';
+        showToast('Welcome to the Faculty Portal, ' + foundTeacher.full_name + '!');
+        return;
+      }
+
+      if (state.selectedPortal === 'admin') {
+        if (email !== 'admin@attendly.edu') {
+          showToast('Access Denied: Restricted to Dean Academics & System Administrators only!', 'error');
+          return;
+        }
+        state.currentUser = {
+          id: 1,
+          full_name: 'Dr. Rajeshwari Kulkarni (Dean Academics)',
+          email: 'admin@attendly.edu',
+          role: 'admin',
+          roll_or_emp_id: 'ADM-001'
+        };
+        state.activeTab = 'admin_command';
+        showToast('Logged into Executive Admin Command Center');
+      }
+    };
+
+    window.handleRegisterSubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value.trim();
+      const idCode = document.getElementById('reg-id').value.trim();
+      const email = document.getElementById('reg-email').value.trim().toLowerCase();
+      const parentEmailEl = document.getElementById('reg-parent-email');
+      const parentEmail = parentEmailEl ? parentEmailEl.value.trim() : 'parent@college.edu';
+
+      if (!name || !idCode || !email) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+      }
+
+      if (state.selectedPortal === 'student') {
+        const newId = Date.now();
+        const newSt = {
+          student_id: newId,
+          full_name: name,
+          roll_number: idCode,
+          email: email,
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Registered Guardian',
+          parent_email: parentEmail || 'parent@college.edu',
+          notify_parent_email: true,
+          subject_stats: state.subjects.map(function(s) { return { subject_id: s.id, attended: 16, total: 20 }; }),
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 28, missed: 7, percentage: 80.0 },
+            { month: 'Oct 2026', conducted: 35, attended: 28, missed: 7, percentage: 80.0 },
+            { month: 'Nov 2026', conducted: 30, attended: 24, missed: 6, percentage: 80.0 }
+          ]
+        };
+        state.students.push(newSt);
+        state.currentUser = { id: newId, full_name: name, email: email, role: 'student', roll_or_emp_id: idCode };
+        state.selectedStudentId = newId;
+        state.activeTab = 'overview';
+        showToast('Student account created and logged into Student Portal!');
+      } else {
+        const newTid = Date.now();
+        const newT = { id: newTid, full_name: name, email: email, roll_or_emp_id: idCode, department_id: 1, designation: 'Faculty Member' };
+        state.teachers.push(newT);
+        state.currentUser = Object.assign({}, newT, { role: 'teacher' });
+        state.activeTab = 'faculty_rollcall';
+        showToast('Faculty account created and logged into Teacher Portal!');
+      }
+    };
+
+    window.logoutSession = function() {
+      state.currentUser = null;
+      renderApp();
+    };
+
+    window.switchTab = function(tabId) {
+      state.activeTab = tabId;
+      renderApp();
+    };
+
+    window.changeInspectedStudent = function(val) {
+      state.selectedStudentId = Number(val);
+      renderApp();
+    };
+
+    window.updateSimulatorRange = function(val) {
+      state.simExtraClasses = Number(val);
+      renderApp();
+    };
+
+    window.toggleRollCallStatus = function(studentId, statusVal) {
+      state.markSheetStatus[studentId] = statusVal;
+      renderApp();
+    };
+
+    window.changeMarkSheetSubject = function(val) {
+      state.markSheetSubjectId = Number(val);
+      renderApp();
+    };
+
+    window.changeMarkSheetDate = function(val) {
+      state.markSheetDate = val;
+      renderApp();
+    };
+
+    window.submitRollCallSheet = function() {
+      const subj = state.subjects.find(function(s) { return s.id === Number(state.markSheetSubjectId); }) || state.subjects[0];
+      state.students.forEach(function(st) {
+        const statusVal = state.markSheetStatus[st.student_id] || 'Present';
+        st.subject_stats.forEach(function(ss) {
+          if (ss.subject_id === subj.id) {
+            ss.total += 1;
+            if (statusVal === 'Present') ss.attended += 1;
+          }
+        });
+      });
+      showToast('Attendance recorded for ' + subj.code + ' (' + state.markSheetDate + ')! Student percentages & RED LINE updated.');
+    };
+
+    window.runConsolidatedFullDayScan = function() {
+      const enriched = getEnrichedStudents();
+      let count = 0;
+      enriched.forEach(function(st) {
+        if (state.markSheetStatus[st.student_id] === 'Absent') {
+          const exists = state.dailyAlerts.some(function(a) {
+            return a.student_id === st.student_id && a.absence_date === state.markSheetDate;
+          });
+          if (!exists) {
+            count += 1;
+            state.dailyAlerts.unshift({
+              id: Date.now() + st.student_id,
+              student_id: st.student_id,
+              student_name: st.full_name,
+              roll_number: st.roll_number,
+              department_name: st.department_name,
+              year: st.year,
+              absence_date: state.markSheetDate,
+              parent_email: st.parent_email,
+              attendance_status: 'Full-Day Absent (' + state.subjects.length + '/' + state.subjects.length + ' Classes Missed)',
+              delivery_status: 'Sent (1 Consolidated Daily Email)',
+              email_subject: '[ATTENDLY Consolidated Daily Alert] Full-Day Absence Notice - ' + st.full_name + ' (' + state.markSheetDate + ')',
+              email_body: 'Dear ' + (st.parent_name || 'Parent/Guardian') + ',\n\nThis is an automated consolidated end-of-day attendance notification from ATTENDLY.\n\nStudent Name      : ' + st.full_name + ' (' + st.roll_number + ')\nDate              : ' + state.markSheetDate + '\nDepartment        : ' + st.department_name + '\nAcademic Year     : Year ' + st.year + ' (Semester ' + st.semester + ')\nAttendance Status : FULL-DAY ABSENT (' + state.subjects.length + '/' + state.subjects.length + ' classes missed)\n\nNote: Separate per-class emails were suppressed. Only ONE consolidated daily notification is generated per student.\n\nRegards,\nATTENDLY Academic Monitoring Cell'
+            });
+          }
+        }
+      });
+      if (count > 0) {
+        showToast('Dispatched ' + count + ' consolidated daily parent email notification(s) for ' + state.markSheetDate + '!');
+      } else {
+        showToast('Consolidated scan verified for ' + state.markSheetDate + ': Duplicate per-class emails prevented.');
+      }
+    };
+
+    window.openEmailPreview = function(alertId) {
+      state.selectedEmailAlertId = Number(alertId);
+      renderApp();
+    };
+
+    window.closeEmailPreview = function() {
+      state.selectedEmailAlertId = null;
+      renderApp();
+    };
+
+    window.setDoubtFilter = function(f) {
+      state.doubtFilter = f;
+      renderApp();
+    };
+
+    window.submitStudentDoubt = function(e) {
+      e.preventDefault();
+      const enriched = getEnrichedStudents();
+      const activeStudent = getActiveStudent(enriched);
+      const subjId = Number(document.getElementById('doubt-subject').value);
+      const title = document.getElementById('doubt-title').value.trim();
+      const desc = document.getElementById('doubt-desc').value.trim();
+      const fileEl = document.getElementById('doubt-file');
+      const fileName = (fileEl && fileEl.files && fileEl.files[0]) ? fileEl.files[0].name : null;
+
+      if (!title || !desc) return;
+      const subj = state.subjects.find(function(s) { return s.id === subjId; }) || state.subjects[0];
+      const teacher = state.teachers.find(function(t) { return t.id === subj.teacher_id; }) || state.teachers[0];
+
+      state.doubts.unshift({
+        id: Date.now(),
+        student_id: activeStudent.student_id,
+        student_name: activeStudent.full_name,
+        student_roll: activeStudent.roll_number,
+        subject_id: subj.id,
+        subject_name: subj.name,
+        subject_code: subj.code,
+        teacher_id: teacher.id,
+        teacher_name: teacher.full_name,
+        title: title,
+        description: desc,
+        attachment_name: fileName,
+        status: 'Pending',
+        teacher_reply: ''
+      });
+      showToast('Doubt submitted to ' + teacher.full_name + '!');
+    };
+
+    window.submitTeacherDoubtReply = function(doubtId) {
+      const inputEl = document.getElementById('reply-input-' + doubtId);
+      if (!inputEl || !inputEl.value.trim()) return;
+      const d = state.doubts.find(function(x) { return x.id === Number(doubtId); });
+      if (d) {
+        d.teacher_reply = inputEl.value.trim();
+        d.status = 'Answered';
+        showToast('Response posted and doubt marked as Answered!');
+      }
+    };
+
+    window.resolveDoubt = function(doubtId) {
+      const d = state.doubts.find(function(x) { return x.id === Number(doubtId); });
+      if (d) {
+        d.status = 'Resolved';
+        showToast('Doubt marked as Resolved!');
+      }
+    };
+
+    window.submitRatingForm = function(e) {
+      e.preventDefault();
+      const isStudent = state.currentUser.role === 'student';
+      const targetId = Number(document.getElementById('rating-target').value);
+      const m1 = Number(document.getElementById('rating-m1').value);
+      const m2 = Number(document.getElementById('rating-m2').value);
+      const m3 = Number(document.getElementById('rating-m3').value);
+      const comment = document.getElementById('rating-comment').value.trim();
+      const overall = Number(((m1 + m2 + m3) / 3).toFixed(2));
+
+      const targetObj = isStudent
+        ? state.teachers.find(function(t) { return t.id === targetId; }) || state.teachers[0]
+        : state.students.find(function(s) { return s.student_id === targetId; }) || state.students[0];
+
+      state.ratings.unshift({
+        id: Date.now(),
+        from_user_name: state.currentUser.full_name + ' (' + (isStudent ? 'Student' : 'Faculty') + ')',
+        to_user_name: targetObj.full_name,
+        direction: isStudent ? 'student_to_teacher' : 'teacher_to_student',
+        overall_score: overall,
+        comment: comment || 'Strong academic engagement and constructive interaction.'
+      });
+      showToast('Submitted ' + overall + '/5.0 rating for ' + targetObj.full_name + '!');
+    };
+
+    window.submitLeaveForm = function(e) {
+      e.preventDefault();
+      const enriched = getEnrichedStudents();
+      const activeStudent = getActiveStudent(enriched);
+      const absDate = document.getElementById('leave-date').value;
+      const reason = document.getElementById('leave-reason').value;
+      const desc = document.getElementById('leave-desc').value.trim();
+      const fileEl = document.getElementById('leave-file');
+      const fileName = (fileEl && fileEl.files && fileEl.files[0]) ? fileEl.files[0].name : 'medical_certificate.pdf';
+
+      if (!desc) return;
+      state.leaveRequests.unshift({
+        id: Date.now(),
+        student_id: activeStudent.student_id,
+        student_name: activeStudent.full_name,
+        roll_number: activeStudent.roll_number,
+        subject_id: 1,
+        subject_name: 'All Scheduled Classes',
+        absence_date: absDate,
+        reason_category: reason,
+        explanation_text: desc,
+        document_name: fileName,
+        status: 'Pending',
+        reviewer_name: null,
+        reviewer_comment: '',
+        convert_to_present: false
+      });
+      showToast('Explanation submitted (Status: Pending). Attendance remains unchanged until authorized faculty review.');
+    };
+
+    window.openReviewModal = function(leaveId) {
+      state.reviewModalLeaveId = Number(leaveId);
+      renderApp();
+    };
+
+    window.closeReviewModal = function() {
+      state.reviewModalLeaveId = null;
+      renderApp();
+    };
+
+    window.finalizeLeaveDecision = function(statusDecision, convertToPresent) {
+      const lv = state.leaveRequests.find(function(x) { return x.id === state.reviewModalLeaveId; });
+      if (!lv) return;
+      lv.status = statusDecision;
+      lv.reviewer_name = state.currentUser.full_name;
+      lv.reviewer_comment = statusDecision === 'Approved'
+        ? (convertToPresent ? 'Approved with Medical Condonation (Absent converted to Present).' : 'Explanation verified & recorded (Attendance unchanged per policy).')
+        : 'Rejected due to insufficient supporting documentation.';
+      lv.convert_to_present = convertToPresent;
+
+      if (statusDecision === 'Approved' && convertToPresent) {
+        const st = state.students.find(function(s) { return s.student_id === lv.student_id; });
+        if (st && st.subject_stats[0]) {
+          st.subject_stats[0].attended = Math.min(st.subject_stats[0].total, st.subject_stats[0].attended + 1);
+        }
+        showToast('Approved AND converted Absent record to Present per college condonation policy!');
+      } else {
+        showToast('Leave request marked as ' + statusDecision + ' (Attendance unchanged per policy).');
+      }
+      state.reviewModalLeaveId = null;
+      renderApp();
+    };
+
+    window.adminCreateAccount = function() {
+      const name = document.getElementById('adm-user-name').value.trim();
+      const email = document.getElementById('adm-user-email').value.trim().toLowerCase();
+      const idCode = document.getElementById('adm-user-id').value.trim();
+      const role = document.getElementById('adm-user-role').value;
+      const parentEmail = document.getElementById('adm-user-parent').value.trim();
+
+      if (!name || !email || !idCode) {
+        showToast('Please enter Name, Email, and Roll/Employee ID', 'error');
+        return;
+      }
+
+      if (role === 'student') {
+        state.students.push({
+          student_id: Date.now(),
+          full_name: name,
+          roll_number: idCode,
+          email: email,
+          department_name: 'Computer Science & Engineering',
+          department_code: 'CSE',
+          year: 3,
+          semester: 5,
+          parent_name: 'Parent',
+          parent_email: parentEmail || 'parent@college.edu',
+          notify_parent_email: true,
+          subject_stats: state.subjects.map(function(s) { return { subject_id: s.id, attended: 16, total: 20 }; }),
+          monthly_reports: [
+            { month: 'Sep 2026', conducted: 35, attended: 28, missed: 7, percentage: 80.0 },
+            { month: 'Oct 2026', conducted: 35, attended: 28, missed: 7, percentage: 80.0 },
+            { month: 'Nov 2026', conducted: 30, attended: 24, missed: 6, percentage: 80.0 }
+          ]
+        });
+      } else {
+        state.teachers.push({
+          id: Date.now(),
+          full_name: name,
+          email: email,
+          roll_or_emp_id: idCode,
+          department_id: 1,
+          designation: 'Faculty'
+        });
+      }
+      showToast('Added ' + role + ' account: ' + name);
+    };
+
+    window.adminRemoveStudent = function(studentId) {
+      if (state.students.length <= 1) return;
+      state.students = state.students.filter(function(s) { return s.student_id !== Number(studentId); });
+      showToast('Student removed from directory');
+    };
+
+    window.adminAddSubject = function() {
+      const name = document.getElementById('adm-sub-name').value.trim();
+      const code = document.getElementById('adm-sub-code').value.trim();
+      const teacherId = Number(document.getElementById('adm-sub-teacher').value);
+      const slot = document.getElementById('adm-sub-slot').value.trim();
+      if (!name || !code) {
+        showToast('Please enter Subject Title and Code', 'error');
+        return;
+      }
+      const newSubId = Date.now();
+      state.subjects.push({
+        id: newSubId,
+        name: name,
+        code: code,
+        department_id: 1,
+        semester: 5,
+        teacher_id: teacherId,
+        schedule_slot: slot || '03:45 PM - 04:45 PM'
+      });
+      state.students.forEach(function(s) {
+        s.subject_stats.push({ subject_id: newSubId, attended: 16, total: 20 });
+      });
+      showToast('Added subject ' + code + ' — ' + name);
+    };
+
+    window.exportReport = function(format) {
+      const enriched = getEnrichedStudents();
+      if (format === 'excel') {
+        const headers = ['Roll Number,Student Name,Department,Semester,Total Classes,Attended,Missed,Attendance %,Status Badge,RED LINE Status,Classes Needed for 75%,Parent Email'];
+        const rows = enriched.map(function(s) {
+          return s.roll_number + ',"' + s.full_name + '",' + s.department_code + ',' + s.semester + ',' + s.total_classes + ',' + s.attended_classes + ',' + s.missed_classes + ',' + s.overall_percentage + '%,' + s.status_color + ',' + (s.is_redline ? 'BELOW 75% (RED LINE)' : 'SAFE (>=75%)') + ',' + s.classes_needed_for_75 + ',' + s.parent_email;
+        });
+        const blob = new Blob([[headers].concat(rows).join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ATTENDLY_Attendance_Report_' + state.markSheetDate + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Downloaded Excel (CSV) Attendance Report!');
+      } else {
+        window.print();
+      }
+    };
+
+    // ==========================================================================
+    // UI RENDERERS
+    // ==========================================================================
+    function renderLoginScreen() {
+      const themes = {
+        student: {
+          title: 'Student Login Portal',
+          badge: 'STUDENT ACADEMIC PORTAL',
+          subtitle: 'Access your personal attendance dashboard, RED LINE recovery tracker, doubt portal, and medical leave submissions.',
+          gradient: 'from-indigo-700 via-purple-700 to-slate-900',
+          btn: 'bg-purple-600 hover:bg-purple-700',
+          demos: [
+            { label: 'Aarav Sharma (RED LINE 68%)', email: 'aarav@attendly.edu', tag: '68% Red Line' },
+            { label: 'Priya Nair (Good Standing 92%)', email: 'priya@attendly.edu', tag: '92% Green' },
+            { label: 'Rohan Verma (Warning 76%)', email: 'rohan.v@attendly.edu', tag: '76% Yellow' }
+          ]
+        },
+        teacher: {
+          title: 'Faculty / Teacher Login Portal',
+          badge: 'FACULTY & STAFF PORTAL',
+          subtitle: 'Dedicated faculty portal to mark daily class attendance, answer student doubts, and approve medical leave explanations.',
+          gradient: 'from-emerald-700 via-teal-800 to-slate-900',
+          btn: 'bg-emerald-600 hover:bg-emerald-700',
+          demos: [
+            { label: 'Prof. Ananya Deshmukh (DBMS & ML)', email: 'ananya@attendly.edu', tag: 'FAC-CSE-101' },
+            { label: 'Dr. Karthik Subramanian (OS & Cloud)', email: 'karthik@attendly.edu', tag: 'FAC-CSE-102' }
+          ]
+        },
+        admin: {
+          title: 'Administrator Security Portal',
+          badge: 'ADMINISTRATION COMMAND PORTAL',
+          subtitle: 'Restricted Dean & Administration portal for managing accounts, class schedules, parent alerts, and PDF/Excel reports.',
+          gradient: 'from-slate-900 via-indigo-950 to-slate-950',
+          btn: 'bg-indigo-600 hover:bg-indigo-700',
+          demos: [
+            { label: 'Dr. Rajeshwari Kulkarni (Dean Academics)', email: 'admin@attendly.edu', tag: 'ADM-001' }
+          ]
+        }
+      };
+
+      const t = themes[state.selectedPortal];
+      const toastHtml = state.toast
+        ? '<div class="max-w-4xl w-full mb-4 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-lg ' +
+          (state.toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white') +
+          '"><span>' + escapeHtml(state.toast.msg) + '</span></div>'
+        : '';
+
+      const demoButtonsHtml = t.demos.map(function(d) {
+        return (
+          '<button type="button" onclick="autofillDemo(\'' + d.email + '\', \'' + state.selectedPortal + '\')" ' +
+          'class="w-full text-left px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs flex items-center justify-between transition">' +
+          '<span class="font-semibold truncate pr-2">' + escapeHtml(d.label) + '</span>' +
+          '<span class="px-2 py-0.5 rounded bg-black/30 text-[10px] font-bold shrink-0">' + escapeHtml(d.tag) + '</span>' +
+          '</button>'
+        );
+      }).join('');
+
+      const formHtml = state.authMode === 'login'
+        ? '<form onsubmit="handleLoginSubmit(event)" class="space-y-4">' +
+            '<div>' +
+              '<h3 class="text-2xl font-extrabold text-slate-900">' + escapeHtml(t.title) + '</h3>' +
+              '<p class="text-xs text-slate-500 mt-1">Sign in with your authorized ' + escapeHtml(state.selectedPortal) + ' credentials</p>' +
+            '</div>' +
+            '<div>' +
+              '<label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">' +
+                (state.selectedPortal === 'student' ? 'Student College Email' : state.selectedPortal === 'teacher' ? 'Faculty Email Address' : 'Administrator Email') +
+              '</label>' +
+              '<input id="login-email" type="email" required value="' + escapeHtml(state.loginEmail) + '" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />' +
+            '</div>' +
+            '<div>' +
+              '<label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Password</label>' +
+              '<input id="login-password" type="password" required value="' + escapeHtml(state.loginPassword) + '" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600" />' +
+            '</div>' +
+            '<button type="submit" class="w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-lg transition ' + t.btn + '">' +
+              'Enter ' + (state.selectedPortal === 'student' ? 'Student' : state.selectedPortal === 'teacher' ? 'Faculty' : 'Admin') + ' Dashboard &rarr;' +
+            '</button>' +
+          '</form>'
+        : '<form onsubmit="handleRegisterSubmit(event)" class="space-y-3">' +
+            '<h3 class="text-xl font-extrabold text-slate-900">Register New ' + (state.selectedPortal === 'student' ? 'Student' : 'Faculty') + ' Account</h3>' +
+            '<div class="grid grid-cols-2 gap-3">' +
+              '<input id="reg-name" type="text" required placeholder="Full Name" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+              '<input id="reg-id" type="text" required placeholder="' + (state.selectedPortal === 'student' ? 'Roll No (e.g. 21CSE099)' : 'Employee ID (e.g. FAC-108)') + '" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+            '</div>' +
+            '<input id="reg-email" type="email" required placeholder="Official College Email" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+            (state.selectedPortal === 'student'
+              ? '<input id="reg-parent-email" type="email" placeholder="Parent Email (for Consolidated Full-Day Alerts)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />'
+              : '') +
+            '<input id="reg-pass" type="password" required placeholder="Create Password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+            '<button type="submit" class="w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg ' + t.btn + '">Complete Registration</button>' +
+          '</form>';
+
+      return (
+        '<div class="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">' +
+          '<div class="max-w-4xl w-full mb-6 z-10">' +
+            '<div class="text-center mb-5">' +
+              '<span class="inline-block px-4 py-1 rounded-full bg-slate-900 border border-slate-800 text-purple-300 text-xs font-bold mb-2">ROLE-ISOLATED SECURITY GATEWAY</span>' +
+              '<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">ATTENDLY <span class="text-purple-400">Campus Suite</span></h1>' +
+              '<p class="text-xs sm:text-sm text-slate-400 mt-1">Select your dedicated login portal below — Student, Faculty, and Admin portals are strictly separated</p>' +
+            '</div>' +
+            '<div class="grid grid-cols-3 gap-3 bg-slate-900 p-2 rounded-2xl border border-slate-800 shadow-xl">' +
+              '<button type="button" onclick="selectPortal(\'student\')" class="py-3.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition ' +
+                (state.selectedPortal === 'student' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white') + '">' +
+                'Student Login Portal' +
+              '</button>' +
+              '<button type="button" onclick="selectPortal(\'teacher\')" class="py-3.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition ' +
+                (state.selectedPortal === 'teacher' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-slate-400 hover:text-white') + '">' +
+                'Faculty Login Portal' +
+              '</button>' +
+              '<button type="button" onclick="selectPortal(\'admin\')" class="py-3.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition ' +
+                (state.selectedPortal === 'admin' ? 'bg-gradient-to-r from-indigo-600 to-slate-800 text-white shadow-lg border border-indigo-400/30' : 'text-slate-400 hover:text-white') + '">' +
+                'Admin Login Portal' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          toastHtml +
+          '<div class="max-w-4xl w-full grid md:grid-cols-12 bg-white rounded-3xl shadow-2xl overflow-hidden z-10">' +
+            '<div class="md:col-span-5 bg-gradient-to-br ' + t.gradient + ' text-white p-8 flex flex-col justify-between">' +
+              '<div>' +
+                '<span class="inline-block text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-white/15 mb-4">' + escapeHtml(t.badge) + '</span>' +
+                '<h2 class="text-2xl font-extrabold leading-tight mb-3">' + escapeHtml(t.title) + '</h2>' +
+                '<p class="text-white/80 text-xs leading-relaxed mb-6">' + escapeHtml(t.subtitle) + '</p>' +
+                '<div class="p-3.5 rounded-2xl bg-black/25 border border-white/10 text-xs space-y-1">' +
+                  '<p class="font-bold text-white">Strict Role Protection Active</p>' +
+                  '<p class="text-white/75 text-[11px] leading-relaxed">Students cannot log into the Faculty/Admin portals, and teachers cannot impersonate students.</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="pt-6 mt-6 border-t border-white/15">' +
+                '<p class="text-[11px] font-bold uppercase tracking-wider text-white/80 mb-2">1-Click Autofill ' + escapeHtml(state.selectedPortal.toUpperCase()) + ' Demo:</p>' +
+                '<div class="space-y-2">' + demoButtonsHtml + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="md:col-span-7 p-8 lg:p-10 flex flex-col justify-center">' +
+              (state.selectedPortal !== 'admin'
+                ? '<div class="flex gap-2 mb-6 bg-slate-100 p-1 rounded-xl w-fit">' +
+                    '<button type="button" onclick="setAuthMode(\'login\')" class="px-4 py-1.5 rounded-lg text-xs font-bold ' + (state.authMode === 'login' ? 'bg-slate-900 text-white shadow' : 'text-slate-600') + '">Sign In</button>' +
+                    '<button type="button" onclick="setAuthMode(\'register\')" class="px-4 py-1.5 rounded-lg text-xs font-bold ' + (state.authMode === 'register' ? 'bg-slate-900 text-white shadow' : 'text-slate-600') + '">Register ' + (state.selectedPortal === 'student' ? 'Student' : 'Faculty') + '</button>' +
+                  '</div>'
+                : '') +
+              formHtml +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderAttendanceRingSvg(pct) {
+      const radius = 50;
+      const circum = 2 * Math.PI * radius;
+      const offset = circum - (Math.min(100, pct) / 100) * circum;
+      const color = pct >= 80 ? '#10b981' : pct >= 75 ? '#f59e0b' : '#f43f5e';
+      return (
+        '<div class="relative w-28 h-28 flex items-center justify-center shrink-0">' +
+          '<svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">' +
+            '<circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,0.12)" stroke-width="10" fill="none" />' +
+            '<circle cx="60" cy="60" r="50" stroke="' + color + '" stroke-width="10" stroke-dasharray="' + circum + '" stroke-dashoffset="' + offset + '" stroke-linecap="round" fill="none" />' +
+          '</svg>' +
+          '<div class="absolute inset-0 flex flex-col items-center justify-center text-center">' +
+            '<span class="text-xl font-extrabold text-white">' + pct + '%</span>' +
+            '<span class="text-[10px] uppercase tracking-wider text-slate-300 font-bold">' + (pct >= 75 ? 'Eligible' : 'Red Line') + '</span>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderSubjectBarsHtml(breakdown) {
+      return breakdown.map(function(item) {
+        const grad = item.percentage >= 80
+          ? 'from-emerald-500 to-teal-400'
+          : item.percentage >= 75
+          ? 'from-amber-500 to-yellow-400'
+          : 'from-rose-600 to-pink-500';
+        return (
+          '<div class="space-y-1.5">' +
+            '<div class="flex justify-between text-xs">' +
+              '<span class="font-bold text-slate-800">' + escapeHtml(item.subject_code) + ' <span class="font-medium text-slate-500">• ' + escapeHtml(item.subject_name) + '</span></span>' +
+              '<span class="font-extrabold text-slate-900">' + item.attended + '/' + item.total_classes + ' (' + item.percentage + '%)</span>' +
+            '</div>' +
+            '<div class="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden relative">' +
+              '<div class="h-full bg-gradient-to-r ' + grad + ' rounded-full" style="width:' + Math.min(100, item.percentage) + '%"></div>' +
+              '<div class="absolute top-0 bottom-0 w-0.5 bg-slate-900" style="left:75%" title="75% Mandatory Threshold"></div>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    function renderMonthlySvgHtml(reports) {
+      const points = reports.map(function(r, idx) {
+        return {
+          month: r.month,
+          percentage: r.percentage,
+          x: 65 + idx * 135,
+          y: 170 - (r.percentage / 100) * 130
+        };
+      });
+      const poly = points.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+      const grid = [25, 50, 75, 100].map(function(val) {
+        const y = 170 - (val / 100) * 130;
+        const isRed = val === 75;
+        return (
+          '<line x1="42" y1="' + y + '" x2="365" y2="' + y + '" stroke="' + (isRed ? '#e11d48' : '#e2e8f0') + '" stroke-dasharray="' + (isRed ? '5 4' : '2 2') + '" stroke-width="' + (isRed ? '1.5' : '1') + '" />' +
+          '<text x="10" y="' + (y + 4) + '" font-size="10" fill="' + (isRed ? '#e11d48' : '#64748b') + '" font-weight="' + (isRed ? 'bold' : 'normal') + '">' + val + '%</text>'
+        );
+      }).join('');
+
+      const circles = points.map(function(p) {
+        return (
+          '<circle cx="' + p.x + '" cy="' + p.y + '" r="6" fill="' + (p.percentage < 75 ? '#e11d48' : '#7c3aed') + '" stroke="#ffffff" stroke-width="2.5" />' +
+          '<text x="' + p.x + '" y="' + (p.y - 12) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#0f172a">' + p.percentage + '%</text>' +
+          '<text x="' + p.x + '" y="194" text-anchor="middle" font-size="11" fill="#475569" font-weight="600">' + escapeHtml(p.month) + '</text>'
+        );
+      }).join('');
+
+      return (
+        '<svg viewBox="0 0 400 210" class="w-full h-56">' +
+          grid +
+          (points.length > 1
+            ? '<polygon points="65,170 ' + poly + ' ' + points[points.length - 1].x + ',170" fill="rgba(124,58,237,0.14)" />' +
+              '<polyline fill="none" stroke="#7c3aed" stroke-width="3.5" stroke-linecap="round" points="' + poly + '" />'
+            : '') +
+          circles +
+        '</svg>'
+      );
+    }
+
+    function renderOverviewTab(activeStudent) {
+      const subjectCards = activeStudent.subject_breakdown.map(function(sub) {
+        const badgeCls = sub.status_color === 'Green'
+          ? 'bg-emerald-100 text-emerald-800'
+          : sub.status_color === 'Yellow'
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-rose-100 text-rose-800';
+        const badgeLabel = sub.status_color === 'Green' ? 'Good' : sub.status_color === 'Yellow' ? 'Warning' : 'Low (<75%)';
+        return (
+          '<div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col justify-between">' +
+            '<div>' +
+              '<div class="flex items-center justify-between mb-2">' +
+                '<span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800">' + escapeHtml(sub.subject_code) + '</span>' +
+                '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold ' + badgeCls + '">' + badgeLabel + '</span>' +
+              '</div>' +
+              '<h4 class="font-extrabold text-slate-900 text-sm">' + escapeHtml(sub.subject_name) + '</h4>' +
+              '<p class="text-xs text-slate-500 mt-0.5">' + escapeHtml(sub.teacher_name) + ' • ' + escapeHtml(sub.schedule_slot) + '</p>' +
+            '</div>' +
+            '<div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">' +
+              '<span class="text-xs text-slate-600">Attended: <strong>' + sub.attended + '/' + sub.total_classes + '</strong></span>' +
+              '<span class="text-lg font-black text-slate-900">' + sub.percentage + '%</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 text-white rounded-3xl p-6 lg:p-8 shadow-xl flex flex-wrap items-center justify-between gap-6">' +
+            '<div class="max-w-xl space-y-2">' +
+              '<span class="inline-block px-3 py-1 rounded-full bg-white/10 text-purple-200 text-xs font-bold">B.Tech CSE • Year ' + activeStudent.year + ' • Semester ' + activeStudent.semester + '</span>' +
+              '<h3 class="text-2xl lg:text-3xl font-extrabold tracking-tight">Welcome back, ' + escapeHtml(activeStudent.full_name) + '!</h3>' +
+              '<p class="text-xs sm:text-sm text-slate-300 leading-relaxed">' +
+                (activeStudent.is_redline
+                  ? 'Your cumulative attendance is ' + activeStudent.overall_percentage + '%, which is below the mandatory 75% threshold. Attend your next ' + activeStudent.classes_needed_for_75 + ' consecutive classes to clear the RED LINE.'
+                  : 'Great job! Your cumulative attendance is ' + activeStudent.overall_percentage + '%, comfortably above the mandatory 75% college requirement.') +
+              '</p>' +
+              '<div class="pt-2 flex flex-wrap gap-2.5">' +
+                '<button onclick="switchTab(\'redline\')" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow transition">Open RED LINE Recovery Calculator &rarr;</button>' +
+                '<button onclick="switchTab(\'leaves\')" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition">Submit Medical / Leave Proof</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="flex items-center gap-5 bg-white/5 border border-white/10 px-6 py-4 rounded-3xl">' +
+              renderAttendanceRingSvg(activeStudent.overall_percentage) +
+              '<div class="space-y-1.5 text-xs">' +
+                '<div><p class="text-slate-400">Total Conducted</p><p class="text-lg font-extrabold text-white">' + activeStudent.total_classes + ' Classes</p></div>' +
+                '<div><p class="text-slate-400">Attended / Missed</p><p class="text-sm font-bold"><span class="text-emerald-400">' + activeStudent.attended_classes + ' Present</span> • <span class="text-rose-400">' + activeStudent.missed_classes + ' Absent</span></p></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">' +
+              '<p class="text-xs font-bold uppercase text-slate-400">Cumulative Standing</p>' +
+              '<div class="flex items-baseline justify-between mt-2">' +
+                '<span class="text-3xl font-extrabold text-slate-900">' + activeStudent.overall_percentage + '%</span>' +
+                '<span class="text-xs font-extrabold px-2.5 py-1 rounded-full ' + (activeStudent.status_color === 'Green' ? 'bg-emerald-100 text-emerald-800' : activeStudent.status_color === 'Yellow' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') + '">' + activeStudent.status_color + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">' +
+              '<p class="text-xs font-bold uppercase text-slate-400">Classes Conducted</p>' +
+              '<p class="text-3xl font-extrabold text-slate-900 mt-2">' + activeStudent.total_classes + '</p>' +
+            '</div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">' +
+              '<p class="text-xs font-bold uppercase text-slate-400">Classes Attended</p>' +
+              '<p class="text-3xl font-extrabold text-emerald-600 mt-2">' + activeStudent.attended_classes + '</p>' +
+            '</div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">' +
+              '<p class="text-xs font-bold uppercase text-slate-400">Classes Missed</p>' +
+              '<p class="text-3xl font-extrabold text-rose-600 mt-2">' + activeStudent.missed_classes + '</p>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">' +
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">' +
+              '<h3 class="font-extrabold text-slate-900 text-base mb-1">Subject-Wise Attendance Analytics</h3>' +
+              '<p class="text-xs text-slate-500 mb-3">Visual comparison against the 75% mandatory threshold</p>' +
+              '<div class="space-y-4 pt-2">' + renderSubjectBarsHtml(activeStudent.subject_breakdown) + '</div>' +
+            '</div>' +
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">' +
+              '<h3 class="font-extrabold text-slate-900 text-base mb-1">Monthly & Semester Trajectory</h3>' +
+              '<p class="text-xs text-slate-500 mb-3">Month-by-month attendance progression</p>' +
+              renderMonthlySvgHtml(activeStudent.monthly_reports) +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">' + subjectCards + '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderRedlineTab(activeStudent) {
+      const projAtt = activeStudent.attended_classes + state.simExtraClasses;
+      const projTot = activeStudent.total_classes + state.simExtraClasses;
+      const projPct = Number(((projAtt / projTot) * 100).toFixed(2));
+      const logsHtml = state.redlineLogs
+        .filter(function(l) { return state.currentUser.role !== 'student' || l.student_id === activeStudent.student_id; })
+        .map(function(l) {
+          return (
+            '<div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs">' +
+              '<p class="font-bold text-rose-950">' + escapeHtml(l.student_name) + ' (' + escapeHtml(l.roll_number) + ') — ' + l.attendance_percentage + '%</p>' +
+              '<p class="text-rose-800 mt-0.5">' + escapeHtml(l.message) + '</p>' +
+            '</div>'
+          );
+        }).join('');
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="bg-gradient-to-r from-slate-950 via-rose-950 to-slate-900 text-white p-8 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-6">' +
+            '<div class="max-w-xl">' +
+              '<span class="px-3 py-1 rounded-full bg-rose-600 text-xs font-extrabold uppercase">RED LINE Warning System (75% Statutory Minimum)</span>' +
+              '<h3 class="text-2xl font-extrabold mt-3">' +
+                (activeStudent.is_redline
+                  ? 'WARNING ACTIVE: ' + escapeHtml(activeStudent.full_name) + ' (' + activeStudent.overall_percentage + '%)'
+                  : 'SAFE STANDING: ' + escapeHtml(activeStudent.full_name) + ' (' + activeStudent.overall_percentage + '%)') +
+              '</h3>' +
+              '<p class="text-xs text-rose-200 mt-2">' +
+                (activeStudent.is_redline
+                  ? 'Attendance is below 75%. Regular alerts are sent until ' + escapeHtml(activeStudent.full_name) + ' attends ' + activeStudent.classes_needed_for_75 + ' additional consecutive classes.'
+                  : 'Attendance meets the mandatory 75% requirement.') +
+              '</p>' +
+            '</div>' +
+            '<div class="bg-slate-900/90 border border-rose-400/30 p-5 rounded-2xl text-center min-w-[200px]">' +
+              '<p class="text-xs uppercase font-bold text-rose-300">Classes Needed for 75%</p>' +
+              '<p class="text-4xl font-black my-1">+' + activeStudent.classes_needed_for_75 + '</p>' +
+              '<p class="text-xs text-slate-300">Consecutive classes</p>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">' +
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">' +
+              '<h4 class="font-extrabold text-slate-900">What-If Recovery Simulator</h4>' +
+              '<label class="flex justify-between text-xs font-bold">' +
+                '<span>Simulate Attending Upcoming Consecutive Classes:</span>' +
+                '<span class="text-purple-700 font-extrabold">+' + state.simExtraClasses + ' Classes</span>' +
+              '</label>' +
+              '<input type="range" min="0" max="50" value="' + state.simExtraClasses + '" oninput="updateSimulatorRange(this.value)" class="w-full accent-purple-600" />' +
+              '<div class="p-4 rounded-2xl border ' + (projPct >= 75 ? 'bg-emerald-50 border-emerald-300' : 'bg-rose-50 border-rose-300') + '">' +
+                '<p class="text-sm font-extrabold">Projected Attendance: <span class="' + (projPct >= 75 ? 'text-emerald-700' : 'text-rose-700') + '">' + projPct + '%</span></p>' +
+                '<p class="text-xs mt-1">' +
+                  (projPct >= 75
+                    ? 'Clears the 75% Red Line! Recovery notification will be triggered automatically.'
+                    : 'Still needs +' + calcClassesNeededFor75(projAtt, projTot) + ' more consecutive classes to reach 75%.') +
+                '</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+              '<h4 class="font-extrabold text-slate-900">RED LINE Notification Feed</h4>' +
+              logsHtml +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderAlertsTab(activeStudent) {
+      const rows = state.dailyAlerts
+        .filter(function(a) { return state.currentUser.role !== 'student' || a.student_id === activeStudent.student_id; })
+        .map(function(a) {
+          return (
+            '<tr>' +
+              '<td class="py-3.5 px-4 font-bold">' + escapeHtml(a.student_name) + ' (' + escapeHtml(a.roll_number) + ')</td>' +
+              '<td class="py-3.5 px-4 font-mono text-xs">' + escapeHtml(a.absence_date) + '</td>' +
+              '<td class="py-3.5 px-4 text-xs">' + escapeHtml(a.department_name) + ' (Year ' + a.year + ')</td>' +
+              '<td class="py-3.5 px-4 text-xs font-mono text-purple-700">' + escapeHtml(a.parent_email) + '</td>' +
+              '<td class="py-3.5 px-4"><span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">' + escapeHtml(a.attendance_status) + '</span></td>' +
+              '<td class="py-3.5 px-4"><button onclick="openEmailPreview(' + a.id + ')" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold">View Email</button></td>' +
+            '</tr>'
+          );
+        }).join('');
+
+      const previewObj = state.dailyAlerts.find(function(x) { return x.id === state.selectedEmailAlertId; });
+      const modalHtml = previewObj
+        ? '<div class="fixed inset-0 bg-slate-950/60 flex items-center justify-center p-4 z-50">' +
+            '<div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl">' +
+              '<h4 class="font-extrabold text-slate-900">' + escapeHtml(previewObj.email_subject) + '</h4>' +
+              '<pre class="text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200 whitespace-pre-wrap font-mono">' + escapeHtml(previewObj.email_body) + '</pre>' +
+              '<button onclick="closeEmailPreview()" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold">Close Email Preview</button>' +
+            '</div>' +
+          '</div>'
+        : '';
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="bg-slate-900 text-white p-6 rounded-3xl flex flex-wrap items-center justify-between gap-4">' +
+            '<div>' +
+              '<h3 class="text-lg font-extrabold">Full-Day Consolidated Parent Email Alert System</h3>' +
+              '<p class="text-xs text-slate-300 mt-1">Generates strictly ONE consolidated daily email per student when absent for the entire day (never per-class spam).</p>' +
+            '</div>' +
+            (state.currentUser.role !== 'student'
+              ? '<button onclick="runConsolidatedFullDayScan()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold">Trigger End-of-Day Consolidated Scan (' + escapeHtml(state.markSheetDate) + ')</button>'
+              : '') +
+          '</div>' +
+          '<div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-x-auto">' +
+            '<table class="w-full text-left border-collapse text-sm">' +
+              '<thead><tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b border-slate-200">' +
+                '<th class="py-3.5 px-4">Student</th><th class="py-3.5 px-4">Date</th><th class="py-3.5 px-4">Department & Year</th><th class="py-3.5 px-4">Parent Email</th><th class="py-3.5 px-4">Status</th><th class="py-3.5 px-4">Inspect Email</th>' +
+              '</tr></thead>' +
+              '<tbody class="divide-y divide-slate-200">' + rows + '</tbody>' +
+            '</table>' +
+          '</div>' +
+          modalHtml +
+        '</div>'
+      );
+    }
+
+    function renderConnectTab( enriched ) {
+      const subjOpts = state.subjects.map(function(s) {
+        return '<option value="' + s.id + '">' + escapeHtml(s.code + ' — ' + s.name) + '</option>';
+      }).join('');
+
+      const filterBtns = ['All', 'Pending', 'Answered', 'Resolved'].map(function(f) {
+        return '<button onclick="setDoubtFilter(\'' + f + '\')" class="px-3 py-1 rounded-xl text-xs font-bold ' + (state.doubtFilter === f ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600') + '">' + f + '</button>';
+      }).join('');
+
+      const doubtsHtml = state.doubts
+        .filter(function(d) { return state.doubtFilter === 'All' || d.status === state.doubtFilter; })
+        .map(function(d) {
+          const stCls = d.status === 'Resolved' ? 'bg-emerald-100 text-emerald-800' : d.status === 'Answered' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800';
+          return (
+            '<div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-2">' +
+              '<div class="flex justify-between">' +
+                '<div>' +
+                  '<span class="font-extrabold text-sm">' + escapeHtml(d.subject_code + ': ' + d.title) + '</span>' +
+                  '<p class="text-[11px] text-slate-500">Asked by ' + escapeHtml(d.student_name) + ' (' + escapeHtml(d.student_roll) + ') • Assigned to ' + escapeHtml(d.teacher_name) + '</p>' +
+                '</div>' +
+                '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold h-fit ' + stCls + '">' + escapeHtml(d.status) + '</span>' +
+              '</div>' +
+              '<p class="text-xs text-slate-700">' + escapeHtml(d.description) + '</p>' +
+              (d.attachment_name ? '<p class="text-xs text-purple-700 font-bold">Attachment: ' + escapeHtml(d.attachment_name) + '</p>' : '') +
+              (d.teacher_reply ? '<div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-xs"><strong>' + escapeHtml(d.teacher_name) + ':</strong> ' + escapeHtml(d.teacher_reply) + '</div>' : '') +
+              (state.currentUser.role !== 'student'
+                ? '<div class="flex gap-2 pt-1">' +
+                    '<input id="reply-input-' + d.id + '" type="text" placeholder="Write faculty response..." class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white" />' +
+                    '<button onclick="submitTeacherDoubtReply(' + d.id + ')" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Post Reply</button>' +
+                  '</div>'
+                : '') +
+              (d.status !== 'Resolved'
+                ? '<button onclick="resolveDoubt(' + d.id + ')" class="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold">Mark as Resolved ✓</button>'
+                : '') +
+            '</div>'
+          );
+        }).join('');
+
+      const isStudent = state.currentUser.role === 'student';
+      const ratingTargets = isStudent
+        ? state.teachers.map(function(t) { return '<option value="' + t.id + '">' + escapeHtml(t.full_name) + '</option>'; }).join('')
+        : enriched.map(function(s) { return '<option value="' + s.student_id + '">' + escapeHtml(s.full_name) + '</option>'; }).join('');
+
+      const ratingsListHtml = state.ratings.map(function(r) {
+        return (
+          '<div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-xs">' +
+            '<div class="flex justify-between font-bold"><span>' + escapeHtml(r.from_user_name) + ' &rarr; ' + escapeHtml(r.to_user_name) + '</span><span class="text-amber-600 font-extrabold">★ ' + r.overall_score + ' / 5.0</span></div>' +
+            '<p class="text-slate-700 mt-1">' + escapeHtml(r.comment) + '</p>' +
+          '</div>'
+        );
+      }).join('');
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+            (isStudent
+              ? '<form onsubmit="submitStudentDoubt(event)" class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+                  '<h3 class="font-extrabold text-slate-900">Ask Subject Doubt</h3>' +
+                  '<p class="text-xs text-slate-500">Send text, images, or PDF documents to your subject professor</p>' +
+                  '<select id="doubt-subject" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white">' + subjOpts + '</select>' +
+                  '<input id="doubt-title" type="text" required placeholder="Doubt Topic / Question Title" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+                  '<textarea id="doubt-desc" rows="3" required placeholder="Describe your doubt clearly..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea>' +
+                  '<input id="doubt-file" type="file" class="w-full text-xs" />' +
+                  '<button type="submit" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold shadow">Submit Doubt to Faculty</button>' +
+                '</form>'
+              : '') +
+            '<div class="' + (isStudent ? 'lg:col-span-7' : 'lg:col-span-12') + ' bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+              '<div class="flex items-center justify-between">' +
+                '<h3 class="font-extrabold text-slate-900">Subject Doubts & Resolution Queue</h3>' +
+                '<div class="flex gap-1">' + filterBtns + '</div>' +
+              '</div>' +
+              doubtsHtml +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+            '<form onsubmit="submitRatingForm(event)" class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+              '<h3 class="font-extrabold text-slate-900">' + (isStudent ? 'Rate Faculty (Teaching, Doubts, Helpfulness)' : 'Evaluate Student (Participation, Discipline, Engagement)') + '</h3>' +
+              '<select id="rating-target" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white">' + ratingTargets + '</select>' +
+              '<div class="grid grid-cols-3 gap-2">' +
+                '<input id="rating-m1" type="number" min="1" max="5" value="5" class="px-3 py-2 border rounded-xl text-sm" />' +
+                '<input id="rating-m2" type="number" min="1" max="5" value="5" class="px-3 py-2 border rounded-xl text-sm" />' +
+                '<input id="rating-m3" type="number" min="1" max="5" value="5" class="px-3 py-2 border rounded-xl text-sm" />' +
+              '</div>' +
+              '<textarea id="rating-comment" rows="2" placeholder="Write constructive feedback..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm"></textarea>' +
+              '<button type="submit" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-extrabold">Submit Rating & Feedback</button>' +
+            '</form>' +
+            '<div class="lg:col-span-7 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+              '<h3 class="font-extrabold text-slate-900">Academic Ratings & Feedback Wall</h3>' +
+              ratingsListHtml +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderLeavesTab(activeStudent) {
+      const isStudent = state.currentUser.role === 'student';
+      const leavesHtml = state.leaveRequests
+        .filter(function(lv) { return !isStudent || lv.student_id === activeStudent.student_id; })
+        .map(function(lv) {
+          const stCls = lv.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' : lv.status === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800';
+          return (
+            '<div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-2 text-xs">' +
+              '<div class="flex justify-between">' +
+                '<span class="font-extrabold text-sm">' + escapeHtml(lv.student_name) + ' (' + escapeHtml(lv.roll_number) + ') — Absence Date: ' + escapeHtml(lv.absence_date) + '</span>' +
+                '<span class="px-2.5 py-0.5 rounded-full font-bold ' + stCls + '">' + escapeHtml(lv.status) + '</span>' +
+              '</div>' +
+              '<p class="font-bold text-purple-700">' + escapeHtml(lv.reason_category) + ' • Supporting Document: ' + escapeHtml(lv.document_name) + '</p>' +
+              '<p class="text-slate-700">' + escapeHtml(lv.explanation_text) + '</p>' +
+              (lv.reviewer_comment ? '<p class="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border"><strong>Reviewed by ' + escapeHtml(lv.reviewer_name) + ':</strong> ' + escapeHtml(lv.reviewer_comment) + '</p>' : '') +
+              (!isStudent
+                ? '<div class="pt-1"><button onclick="openReviewModal(' + lv.id + ')" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-purple-600 text-white font-bold transition">Review & Decide Request</button></div>'
+                : '') +
+            '</div>'
+          );
+        }).join('');
+
+      const modalLeave = state.leaveRequests.find(function(x) { return x.id === state.reviewModalLeaveId; });
+      const modalHtml = (modalLeave && !isStudent)
+        ? '<div class="fixed inset-0 bg-slate-950/60 flex items-center justify-center p-4 z-50">' +
+            '<div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-3 shadow-2xl">' +
+              '<h4 class="font-extrabold text-slate-900">Review Explanation — ' + escapeHtml(modalLeave.student_name) + '</h4>' +
+              '<p class="text-xs text-slate-500">Choose how to process this absence explanation according to college policy:</p>' +
+              '<button onclick="finalizeLeaveDecision(\'Approved\', false)" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold">Approve Explanation Only (Keep Attendance as Absent)</button>' +
+              '<button onclick="finalizeLeaveDecision(\'Approved\', true)" class="w-full py-2.5 rounded-xl bg-purple-600 text-white text-xs font-extrabold">Approve + Convert Absent to Present (Medical Condonation)</button>' +
+              '<button onclick="finalizeLeaveDecision(\'Rejected\', false)" class="w-full py-2.5 rounded-xl bg-rose-600 text-white text-xs font-extrabold">Reject Explanation Request</button>' +
+              '<button onclick="closeReviewModal()" class="w-full py-2 rounded-xl bg-slate-100 text-xs font-bold">Cancel</button>' +
+            '</div>' +
+          '</div>'
+        : '';
+
+      return (
+        '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+          (isStudent
+            ? '<form onsubmit="submitLeaveForm(event)" class="lg:col-span-5 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+                '<h3 class="font-extrabold text-slate-900">Submit Absence Explanation</h3>' +
+                '<p class="text-xs text-slate-500">Policy Guardrail: Submitting an explanation does NOT automatically convert Absent to Present. Only authorized faculty can approve condonation.</p>' +
+                '<input id="leave-date" type="date" required value="2026-11-10" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />' +
+                '<select id="leave-reason" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-white">' +
+                  '<option value="Medical Emergency">Medical Emergency</option>' +
+                  '<option value="Health Issues">Health Issues</option>' +
+                  '<option value="Family Emergency">Family Emergency</option>' +
+                  '<option value="Personal Reasons">Personal Reasons</option>' +
+                  '<option value="Other">Other</option>' +
+                '</select>' +
+                '<textarea id="leave-desc" rows="3" required placeholder="Write detailed explanation..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm"></textarea>' +
+                '<input id="leave-file" type="file" class="w-full text-xs" />' +
+                '<button type="submit" class="w-full py-3 rounded-xl bg-purple-600 text-white text-xs font-extrabold shadow">Submit Explanation for Review</button>' +
+              '</form>'
+            : '') +
+          '<div class="' + (isStudent ? 'lg:col-span-7' : 'lg:col-span-12') + ' bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">' +
+            '<h3 class="font-extrabold text-slate-900">' + (isStudent ? 'My Submitted Leave Explanations' : 'Student Leave & Medical Explanation Review Desk') + '</h3>' +
+            leavesHtml +
+          '</div>' +
+          modalHtml +
+        '</div>'
+      );
+    }
+
+    function renderFacultyRollCallTab(enriched) {
+      const subjOpts = state.subjects.map(function(s) {
+        return '<option value="' + s.id + '" ' + (s.id === Number(state.markSheetSubjectId) ? 'selected' : '') + '>' + escapeHtml(s.code + ' — ' + s.name + ' (' + s.schedule_slot + ')') + '</option>';
+      }).join('');
+
+      const studentRows = enriched.map(function(st) {
+        const statusVal = state.markSheetStatus[st.student_id] || 'Present';
+        return (
+          '<div class="flex flex-wrap items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs gap-3">' +
+            '<div class="flex items-center gap-3">' +
+              '<span class="font-mono font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800">' + escapeHtml(st.roll_number) + '</span>' +
+              '<div>' +
+                '<p class="font-extrabold text-slate-900 text-sm">' + escapeHtml(st.full_name) + '</p>' +
+                '<p class="text-slate-500">Cumulative: <strong>' + st.overall_percentage + '%</strong> (' + st.status_color + ') • Parent: ' + escapeHtml(st.parent_email) + '</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="flex gap-2">' +
+              '<button onclick="toggleRollCallStatus(' + st.student_id + ', \'Present\')" class="px-4 py-2 rounded-xl font-extrabold transition ' + (statusVal === 'Present' ? 'bg-emerald-600 text-white shadow' : 'bg-white border border-slate-200 text-slate-600') + '">Present</button>' +
+              '<button onclick="toggleRollCallStatus(' + st.student_id + ', \'Absent\')" class="px-4 py-2 rounded-xl font-extrabold transition ' + (statusVal === 'Absent' ? 'bg-rose-600 text-white shadow' : 'bg-white border border-slate-200 text-slate-600') + '">Absent</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white p-7 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">' +
+            '<div>' +
+              '<span class="text-[11px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-white/15">Authorized Faculty Roll-Call Desk</span>' +
+              '<h3 class="text-2xl font-extrabold mt-2">' + escapeHtml(state.currentUser.full_name) + '</h3>' +
+              '<p class="text-xs text-emerald-100 mt-1">Mark daily class attendance, trigger consolidated full-day parent alerts, and monitor RED LINE students.</p>' +
+            '</div>' +
+            '<button onclick="runConsolidatedFullDayScan()" class="px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-emerald-50 text-xs font-extrabold shadow">Run Full-Day Parent Email Scan (' + escapeHtml(state.markSheetDate) + ')</button>' +
+          '</div>' +
+          '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">' +
+            '<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">' +
+              '<div><h4 class="font-extrabold text-slate-900 text-base">Mark Class Attendance</h4><p class="text-xs text-slate-500">Select your assigned subject and session date</p></div>' +
+              '<div class="flex flex-wrap gap-2.5">' +
+                '<select onchange="changeMarkSheetSubject(this.value)" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">' + subjOpts + '</select>' +
+                '<input type="date" value="' + escapeHtml(state.markSheetDate) + '" onchange="changeMarkSheetDate(this.value)" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold" />' +
+                '<button onclick="submitRollCallSheet()" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow">Submit Roll-Call Attendance</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="space-y-2.5">' + studentRows + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderAdminCommandTab(enriched) {
+      const studentList = enriched.map(function(st) {
+        return (
+          '<div class="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/70">' +
+            '<span><strong>' + escapeHtml(st.full_name) + '</strong> (' + escapeHtml(st.roll_number) + ') — ' + st.overall_percentage + '%</span>' +
+            '<button onclick="adminRemoveStudent(' + st.student_id + ')" class="text-rose-600 font-bold">Remove</button>' +
+          '</div>'
+        );
+      }).join('');
+
+      const teacherOpts = state.teachers.map(function(t) {
+        return '<option value="' + t.id + '">' + escapeHtml(t.full_name) + '</option>';
+      }).join('');
+
+      const subjectList = state.subjects.map(function(sub) {
+        return (
+          '<div class="flex items-center justify-between text-xs bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/70">' +
+            '<span><strong>' + escapeHtml(sub.code) + '</strong> — ' + escapeHtml(sub.name) + ' (' + escapeHtml(sub.schedule_slot) + ')</span>' +
+            '<span class="text-purple-700 font-bold">Sem ' + sub.semester + '</span>' +
+          '</div>'
+        );
+      }).join('');
+
+      return (
+        '<div class="space-y-6">' +
+          '<div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-7 rounded-3xl shadow-xl flex flex-wrap items-center justify-between gap-4">' +
+            '<div>' +
+              '<span class="text-[11px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-500/30 border border-indigo-400/30">Institution Administration Command Center</span>' +
+              '<h3 class="text-2xl font-extrabold mt-2">Department & Attendance Governance</h3>' +
+              '<p class="text-xs text-slate-300 mt-1">Manage student & faculty accounts, class schedules, parent notification settings, and export official reports.</p>' +
+            '</div>' +
+            '<div class="flex gap-2.5">' +
+              '<button onclick="exportReport(\'excel\')" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow">Export Excel (CSV)</button>' +
+              '<button onclick="exportReport(\'pdf\')" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold shadow">Download PDF Report</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"><p class="text-xs font-bold uppercase text-slate-400">Enrolled Students</p><p class="text-3xl font-extrabold text-slate-900 mt-1">' + enriched.length + '</p></div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"><p class="text-xs font-bold uppercase text-slate-400">Faculty Members</p><p class="text-3xl font-extrabold text-indigo-600 mt-1">' + state.teachers.length + '</p></div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"><p class="text-xs font-bold uppercase text-slate-400">RED LINE Students (&lt;75%)</p><p class="text-3xl font-extrabold text-rose-600 mt-1">' + enriched.filter(function(s) { return s.is_redline; }).length + '</p></div>' +
+            '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm"><p class="text-xs font-bold uppercase text-slate-400">Consolidated Parent Alerts</p><p class="text-3xl font-extrabold text-purple-600 mt-1">' + state.dailyAlerts.length + '</p></div>' +
+          '</div>' +
+
+          '<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">' +
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">' +
+              '<h4 class="font-extrabold text-slate-900">Add Student or Faculty Account</h4>' +
+              '<div class="grid grid-cols-2 gap-3">' +
+                '<input id="adm-user-name" type="text" placeholder="Full Name" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+                '<input id="adm-user-email" type="email" placeholder="College Email" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+                '<input id="adm-user-id" type="text" placeholder="Roll No / Employee ID" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+                '<select id="adm-user-role" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white"><option value="student">Student</option><option value="teacher">Teacher / Faculty</option></select>' +
+              '</div>' +
+              '<input id="adm-user-parent" type="email" placeholder="Parent Email Address (for Consolidated Daily Alerts)" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+              '<button onclick="adminCreateAccount()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold">+ Add Account to System</button>' +
+              '<div class="pt-2 space-y-2 max-h-44 overflow-y-auto">' + studentList + '</div>' +
+            '</div>' +
+
+            '<div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">' +
+              '<h4 class="font-extrabold text-slate-900">Manage Subjects & Class Schedules</h4>' +
+              '<div class="grid grid-cols-2 gap-3">' +
+                '<input id="adm-sub-name" type="text" placeholder="Subject Title" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+                '<input id="adm-sub-code" type="text" placeholder="Code (e.g. CS506)" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+                '<select id="adm-sub-teacher" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white">' + teacherOpts + '</select>' +
+                '<input id="adm-sub-slot" type="text" placeholder="Time Slot (e.g. 03:45 PM - 04:45 PM)" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs" />' +
+              '</div>' +
+              '<button onclick="adminAddSubject()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-purple-700 text-white text-xs font-extrabold">+ Add Subject Schedule</button>' +
+              '<div class="pt-2 space-y-2 max-h-44 overflow-y-auto">' + subjectList + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderApp() {
+      const root = document.getElementById('app');
+      if (!root) return;
+
+      if (!state.currentUser) {
+        root.innerHTML = renderLoginScreen();
+        return;
+      }
+
+      const enriched = getEnrichedStudents();
+      const activeStudent = getActiveStudent(enriched);
+
+      // Clean, Unnumbered Sidebar Navigation Per Role
+      const menus = {
+        student: [
+          { id: 'overview', label: 'Attendance Dashboard' },
+          { id: 'redline', label: 'RED LINE Tracker', badge: activeStudent.is_redline ? '!' : '' },
+          { id: 'connect', label: 'Student-Teacher Connect' },
+          { id: 'leaves', label: 'Leave & Explanations' },
+          { id: 'alerts', label: 'Parent Alert Log' }
+        ],
+        teacher: [
+          { id: 'faculty_rollcall', label: 'Class Roll-Call & Overview' },
+          { id: 'connect', label: 'Student Doubt Desk', badge: state.doubts.filter(function(d) { return d.status === 'Pending'; }).length },
+          { id: 'leaves', label: 'Leave Approval Queue', badge: state.leaveRequests.filter(function(l) { return l.status === 'Pending'; }).length },
+          { id: 'redline', label: 'RED LINE Watchlist', badge: enriched.filter(function(s) { return s.is_redline; }).length },
+          { id: 'alerts', label: 'Daily Parent Alerts' }
+        ],
+        admin: [
+          { id: 'admin_command', label: 'Executive Command Hub' },
+          { id: 'faculty_rollcall', label: 'Live Attendance Sheet' },
+          { id: 'redline', label: 'RED LINE Risk Monitor', badge: enriched.filter(function(s) { return s.is_redline; }).length },
+          { id: 'alerts', label: 'Consolidated Parent Alerts', badge: state.dailyAlerts.length },
+          { id: 'leaves', label: 'Leave Condonation Desk', badge: state.leaveRequests.filter(function(l) { return l.status === 'Pending'; }).length },
+          { id: 'connect', label: 'Academic Ratings & Doubts' }
+        ]
+      };
+
+      const activeMenu = menus[state.currentUser.role] || menus.student;
+      const navButtonsHtml = activeMenu.map(function(item) {
+        const isActive = state.activeTab === item.id;
+        return (
+          '<button onclick="switchTab(\'' + item.id + '\')" class="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-sm font-semibold transition-all ' +
+            (isActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-900 hover:text-white') + '">' +
+            '<span>' + escapeHtml(item.label) + '</span>' +
+            (item.badge ? '<span class="text-xs px-2 py-0.5 rounded-full font-extrabold ' + (isActive ? 'bg-white text-purple-700' : 'bg-rose-600 text-white') + '">' + item.badge + '</span>' : '') +
+          '</button>'
+        );
+      }).join('');
+
+      const studentInspectorHtml = state.currentUser.role !== 'student'
+        ? '<div class="flex items-center gap-2 bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200">' +
+            '<span class="text-xs font-bold text-slate-600">Inspect Student Record:</span>' +
+            '<select onchange="changeInspectedStudent(this.value)" class="bg-transparent text-xs font-extrabold text-slate-900 focus:outline-none">' +
+              enriched.map(function(s) {
+                return '<option value="' + s.student_id + '" ' + (s.student_id === activeStudent.student_id ? 'selected' : '') + '>' + escapeHtml(s.full_name + ' (' + s.roll_number + ') — ' + s.overall_percentage + '%') + '</option>';
+              }).join('') +
+            '</select>' +
+          '</div>'
+        : '<div class="flex items-center gap-2.5 bg-purple-50 border border-purple-200 px-3.5 py-1.5 rounded-full">' +
+            '<span class="w-2 h-2 rounded-full bg-purple-600"></span>' +
+            '<span class="text-xs font-bold text-purple-900">' + escapeHtml(activeStudent.full_name + ' • ' + activeStudent.roll_number) + '</span>' +
+          '</div>';
+
+      let mainContentHtml = '';
+      if (state.activeTab === 'overview') mainContentHtml = renderOverviewTab(activeStudent);
+      else if (state.activeTab === 'redline') mainContentHtml = renderRedlineTab(activeStudent);
+      else if (state.activeTab === 'alerts') mainContentHtml = renderAlertsTab(activeStudent);
+      else if (state.activeTab === 'connect') mainContentHtml = renderConnectTab(enriched);
+      else if (state.activeTab === 'leaves') mainContentHtml = renderLeavesTab(activeStudent);
+      else if (state.activeTab === 'faculty_rollcall') mainContentHtml = renderFacultyRollCallTab(enriched);
+      else if (state.activeTab === 'admin_command') mainContentHtml = renderAdminCommandTab(enriched);
+      else mainContentHtml = renderOverviewTab(activeStudent);
+
+      const activeTabObj = activeMenu.find(function(n) { return n.id === state.activeTab; }) || activeMenu[0];
+      const toastBanner = state.toast
+        ? '<div class="mx-6 lg:mx-8 mt-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-between shadow-lg ' +
+          (state.toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white border-l-4 border-purple-500') +
+          '"><span>' + escapeHtml(state.toast.msg) + '</span></div>'
+        : '';
+
+      root.innerHTML =
+        '<div class="min-h-screen flex flex-col md:flex-row bg-slate-100 text-slate-900">' +
+          '<aside class="w-full md:w-72 bg-slate-950 text-white flex flex-col justify-between shrink-0 no-print shadow-2xl">' +
+            '<div>' +
+              '<div class="p-6 border-b border-slate-800/80 flex items-center gap-3.5">' +
+                '<div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg font-black text-white">A</div>' +
+                '<div>' +
+                  '<h1 class="text-lg font-extrabold tracking-wide">ATTENDLY</h1>' +
+                  '<p class="text-[11px] text-purple-300 font-medium capitalize">' + escapeHtml(state.currentUser.role) + ' Portal</p>' +
+                '</div>' +
+              '</div>' +
+              '<div class="p-4 mx-4 mt-5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/70">' +
+                '<div class="flex items-center justify-between mb-1.5">' +
+                  '<span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-purple-600 text-white">Verified ' + escapeHtml(state.currentUser.role) + '</span>' +
+                  '<span class="text-xs text-slate-400 font-mono">' + escapeHtml(state.currentUser.roll_or_emp_id) + '</span>' +
+                '</div>' +
+                '<p class="font-bold text-sm truncate mt-1">' + escapeHtml(state.currentUser.full_name) + '</p>' +
+                '<p class="text-xs text-slate-400 truncate">' + escapeHtml(state.currentUser.email) + '</p>' +
+              '</div>' +
+              '<nav class="p-4 space-y-1.5 mt-2">' + navButtonsHtml + '</nav>' +
+            '</div>' +
+            '<div class="p-4 border-t border-slate-800/80 space-y-3">' +
+              '<div class="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400">' +
+                'Role-isolated session. Sign out to switch portals.' +
+              '</div>' +
+              '<button onclick="logoutSession()" class="w-full py-3 rounded-xl bg-slate-900 hover:bg-rose-600 text-slate-200 hover:text-white text-xs font-bold border border-slate-800 transition">' +
+                'Sign Out of ' + escapeHtml(state.currentUser.role.toUpperCase()) + ' Portal' +
+              '</button>' +
+            '</div>' +
+          '</aside>' +
+          '<main class="flex-1 flex flex-col min-w-0 overflow-y-auto">' +
+            '<header class="glass-header border-b border-slate-200/80 px-6 lg:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20 no-print">' +
+              '<div>' +
+                '<h2 class="text-xl font-extrabold text-slate-900">' + escapeHtml(activeTabObj.label) + '</h2>' +
+                '<p class="text-xs text-slate-500 font-medium">Department of Computer Science & Engineering • Semester 5 (2026–27)</p>' +
+              '</div>' +
+              studentInspectorHtml +
+            '</header>' +
+            toastBanner +
+            '<div class="p-6 lg:p-8 space-y-6">' + mainContentHtml + '</div>' +
+          '</main>' +
+        '</div>';
+    }
+
+    // Boot Application Immediately
+    renderApp();
+  </script>
+</body>
+</html>
